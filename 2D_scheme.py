@@ -94,36 +94,35 @@ def PPM(phiOld,c,nx,epsilon,dx,eta1=20 ,eta2 = 0.05):
     dc = c-N
 
     #Calculate dmphi
-    # for j in xrange(1,nx+1):
-    #     if (phiOld[j+1]-phiOld[j])*(phiOld[j]-phiOld[j-1]) > 0:
-    #         dphi = 0.5*(phiOld[j+1]-phiOld[j-1])
-    #         dmphi[j] = min(np.abs(dphi),2*np.abs(phiOld[j]-phiOld[j-1])\
-    #                 ,2*np.abs(phiOld[j+1]-phiOld[j]))*np.sign(dphi)
-    #     else:
-    #         dmphi[j] = 0
-    # # Updated boundary condition
-    # dmphi[0] = dmphi[-2]
-    # dmphi[-1] = dmphi[1]
+    for j in xrange(1,nx+1):
+        if (phiOld[j+1]-phiOld[j])*(phiOld[j]-phiOld[j-1]) > 0:
+            dphi = 0.5*(phiOld[j+1]-phiOld[j-1])
+            dmphi[j] = min(np.abs(dphi),2*np.abs(phiOld[j]-phiOld[j-1])\
+                    ,2*np.abs(phiOld[j+1]-phiOld[j]))*np.sign(dphi)
+        else:
+            dmphi[j] = 0
+    # Updated boundary condition
+    dmphi[0] = dmphi[-2]
+    dmphi[-1] = dmphi[1]
     
-    # #Calculate the second derivative of phi(centred in space)
-    # d2phi[1:-1] = (phiOld[2:] - 2*phiOld[1:-1] + phiOld[:-2])/(6*dx**2)
-    # # # Updated boundary condition
-    # d2phi[0] = d2phi[-2]
-    # d2phi[-1] = d2phi[1]
+    #Calculate the second derivative of phi(centred in space)
+    d2phi[1:-1] = (phiOld[2:] - 2*phiOld[1:-1] + phiOld[:-2])/(6*dx**2)
+    # # Updated boundary condition
+    d2phi[0] = d2phi[-2]
+    d2phi[-1] = d2phi[1]
     
     # Determine the eta to weigh the discontinuity
-    # for j in xrange(1,nx+1):
-    #     if -d2phi[j+1]*d2phi[j-1]>0 and\
-    #             np.abs(phiOld[j+1]-phiOld[j-1])-\
-    #                 epsilon*min(np.abs(phiOld[j+1]),np.abs(phiOld[j-1])) > 0:
-    #         eta[j] = -(d2phi[j+1]-d2phi[j-1])*(dx**2)/(phiOld[j+1]-phiOld[j-1])
-    #     else:
-    #         eta[j] = 0
-    #     eta[j] = max(0,min(eta1*(eta[j]-eta2,1)))
-    # eta[0] = eta[-2]
-    # eta[-1] = eta[1]
-    eta[:] = 0
-    dmphi[:] = 0
+    for j in xrange(1,nx+1):
+        if -d2phi[j+1]*d2phi[j-1]>0 and\
+                np.abs(phiOld[j+1]-phiOld[j-1])-\
+                    epsilon*min(np.abs(phiOld[j+1]),np.abs(phiOld[j-1])) > 0:
+            eta[j] = -(d2phi[j+1]-d2phi[j-1])*(dx**2)/(phiOld[j+1]-phiOld[j-1])
+        else:
+            eta[j] = 0
+        eta[j] = max(0,min(eta1*(eta[j]-eta2,1)))
+    eta[0] = eta[-2]
+    eta[-1] = eta[1]
+    
    #Calculate the right and left boundary value
     phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[1:])+(phiOld[:-1] + 0.5*dmphi[:-1])*eta[1:]
     phi_l[0] = phi_l[-2]
@@ -132,13 +131,13 @@ def PPM(phiOld,c,nx,epsilon,dx,eta1=20 ,eta2 = 0.05):
     phi_r[-1] =phi_r[1]
 
     #To avoid some extreme conditions that phi,j+1/2 is not phi_l,j and phi_r,j-1
-    # for j in xrange(nx+2):
-    #     if (phi_r[j]-phiOld[j])*(phiOld[j]-phi_l[j])<=0:
-    #         phi_l[j] = phi_r[j] = phiOld[j]
-    #     if (phi_r[j]-phi_l[j])*(phiOld[j]-0.5*(phi_l[j]+phi_r[j]))>(phi_r[j]-phi_l[j])**2/6.:
-    #         phi_l[j] = 3*phiOld[j]-2*phi_r[j]
-    #     if -(phi_r[j]-phi_l[j])**2/6.>(phi_r[j]-phi_l[j])*(phiOld[j]-0.5*(phi_r[j]+phi_l[j])):
-    #         phi_r[j] = 3*phiOld[j]-2*phi_l[j]
+    for j in xrange(nx+2):
+        if (phi_r[j]-phiOld[j])*(phiOld[j]-phi_l[j])<=0:
+            phi_l[j] = phi_r[j] = phiOld[j]
+        if (phi_r[j]-phi_l[j])*(phiOld[j]-0.5*(phi_l[j]+phi_r[j]))>(phi_r[j]-phi_l[j])**2/6.:
+            phi_l[j] = 3*phiOld[j]-2*phi_r[j]
+        if -(phi_r[j]-phi_l[j])**2/6.>(phi_r[j]-phi_l[j])*(phiOld[j]-0.5*(phi_r[j]+phi_l[j])):
+            phi_r[j] = 3*phiOld[j]-2*phi_l[j]
 
     #define parabolic profile
     daj = phi_r - phi_l
