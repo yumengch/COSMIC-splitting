@@ -32,46 +32,82 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
             OUT = flux(ny,dy,cy[:,i],phi_mid[:-1,i],mass[:,i])
             YC[:-1,i] = conservative(ny,cy[:,i],OUT)
             YA[:-1,i] = advective(ny,cy[:,i],OUT)
-        # YA[-1,:],YA[:,-1] = YA[0,:],YA[:,0]
-        # YC[-1,:],YC[:,-1] = YC[0,:],YC[:,0]
-        YA[-1,:],YA[:,-1],YA[0,:],YA[:,0] = 0,0, 0, 0
-        YC[-1,:],YC[:,-1],YC[0,:],YC[:,0] = 0,0,0,0
-        YA[-2,:],YA[:,-2],YA[1,:],YA[:,1] = 0,0, 0, 0
-        YC[-2,:],YC[:,-2],YC[1,:],YC[:,1] = 0,0,0,0
+        YC[:,-1] = np.where(cx[:,-1]<=0, 0, YC[:,-2])
+        YC[:,0] = np.where(cx[:,0]>=0, 0, YC[:,1])
+        YC[-1,:] = np.where(cy[-1,:]<=0, 0, YC[-2,:])
+        YC[0,:] = np.where(cy[0,:]>=0, 0, YC[1,:])
+        YA[:,-1] = np.where(cx[:,-1]<=0, 0, YA[:,-2])
+        YA[:,0] = np.where(cx[:,0]>=0, 0, YA[:,1])
+        YA[-1,:] = np.where(cy[-1,:]<=0, 0, YA[-2,:])
+        YA[0,:] = np.where(cy[0,:]>=0, 0, YA[1,:])
+        # YA[-1,:], YA[:,-1],YA[0,:], YA[:,0] = 0, 0, 0,0 
+        # YC[-1,:], YC[:,-1],YC[0,:], YC[:,0] = 0, 0,0,0
+        # YA[-2,:], YA[:,-2],YA[1,:], YA[:,1] = 0, 0, 0,0 
+        # YC[-2,:], YC[:,-2],YC[1,:], YC[:,1] = 0, 0,0,0 
         #the inner operator x-direction calculation
         for j in xrange(ny):
             phi_mid[j,:], mass[j,:]= PPM(phiOld[j,:],cx[j,:],nx,epsilon,dx)
             OUT = flux(nx,dx,cx[j,:],phi_mid[j,:-1],mass[j,:])
             XC[j,:-1] = conservative(nx,cx[j,:],OUT)
             XA[j,:-1] = advective(nx,cx[j,:],OUT)
-            
-        # XA[-1,:], XA[:,-1] = XA[0,:], XA[:,0]
-        # XC[-1,:], XC[:,-1] = XC[0,:], XC[:,0]
-        XA[-1,:], XA[:,-1],XA[0,:], XA[:,0] = 0, 0, 0,0 
-        XC[-1,:], XC[:,-1],XC[0,:], XC[:,0] = 0, 0,0,0
-        XA[-2,:], XA[:,-2],XA[1,:], XA[:,1] = 0, 0, 0,0 
-        XC[-2,:], XC[:,-2],XC[1,:], XC[:,1] = 0, 0,0,0 
+        XC[:,-1] = np.where(cx[:,-1]<=0, 0, XC[:,-2])
+        XC[:,0] = np.where(cx[:,0]>=0, 0, XC[:,1])
+        XC[-1,:] = np.where(cy[-1,:]<=0, 0, XC[-2,:])
+        XC[0,:] = np.where(cy[0,:]>=0, 0, XC[1,:])
+        XA[:,-1] = np.where(cx[:,-1]<=0, 0, XA[:,-2])
+        XA[:,0] = np.where(cx[:,0]>=0, 0, XA[:,1])
+        XA[-1,:] = np.where(cy[-1,:]<=0, 0, XA[-2,:])
+        XA[0,:] = np.where(cy[0,:]>=0, 0, XA[1,:])
+        # XA[-1,:], XA[:,-1] = 0,0 #XA[0,:], XA[:,0]
+        # XC[-1,:], XC[:,-1] = 0,0 #XC[0,:], XC[:,0]
+        # XA[-1,:], XA[:,-1],XA[0,:], XA[:,0] = 0, 0, 0,0 
+        # XC[-1,:], XC[:,-1],XC[0,:], XC[:,0] = 0, 0,0,0
+        # XA[-2,:], XA[:,-2],XA[1,:], XA[:,1] = 0, 0, 0,0 
+        # XC[-2,:], XC[:,-2],XC[1,:], XC[:,1] = 0, 0,0,0 
         #intermediate calculation
         phi_AX = phiOld + J*XA
         phi_AY = phiOld + J*YA
+        # for i in xrange(nx):
+        phi_AX[:,-1] = np.where(cx[:,-1]<=0, 0, phi_AX[:,-2])
+        phi_AX[:,0] = np.where(cx[:,0]>=0, 0, phi_AX[:,1])
+        phi_AY[-1,:] = np.where(cy[-1,:]<=0, 0, phi_AY[-2,:])
+        phi_AY[0,:] = np.where(cy[0,:]>=0, 0, phi_AY[1,:])
+        # phi_AX[-1,:], phi_AX[:,-1],phi_AX[0,:], phi_AX[:,0] = 0, 0, 0,0 
+        # phi_AY[-1,:], phi_AY[:,-1],phi_AY[0,:], phi_AY[:,0] = 0, 0,0,0
+        # phi_AX[-2,:], phi_AX[:,-2],phi_AX[1,:], phi_AX[:,1] = 0, 0, 0,0 
+        # phi_AY[-2,:], phi_AY[:,-2],phi_AY[1,:], phi_AY[:,1] = 0, 0,0,0 
         #the outer operator y-direction calculation
         for i in xrange(nx):
             phi_mid[:,i],mass[:,i] = PPM(phi_AX[:,i],cy[:,i],ny,epsilon,dy)
             OUT = flux(ny,dy,cy[:,i],phi_mid[:-1,i],mass[:,i])
             YC_AX[:-1,i] = conservative(ny,cy[:,i],OUT)
-        # YC_AX[-1,:], YC_AX[:,-1] = YC_AX[0,:], YC_AX[:,0]
-        YC_AX[-1,:], YC_AX[:,-1], YC_AX[0,:], YC_AX[:,0] = 0, 0, 0, 0
-        YC_AX[-2,:], YC_AX[:,-2], YC_AX[1,:], YC_AX[:,1] = 0, 0, 0, 0
+        YC_AX[:,-1] = np.where(cx[:,-1]<=0, 0, YC_AX[:,-2])
+        YC_AX[:,0] = np.where(cx[:,0]>=0, 0, YC_AX[:,1])
+        YC_AX[-1,:] = np.where(cy[-1,:]<=0, 0, YC_AX[-2,:])
+        YC_AX[0,:] = np.where(cy[0,:]>=0, 0, YC_AX[1,:])
+        # YC_AX[-1,:], YC_AX[:,-1] = 0,0 #YC_AX[0,:], YC_AX[:,0]
+        # YC_AX[-1,:], YC_AX[:,-1], YC_AX[0,:], YC_AX[:,0] = 0, 0, 0, 0
+        # YC_AX[-2,:], YC_AX[:,-2], YC_AX[1,:], YC_AX[:,1] = 0, 0, 0, 0
         #the outer operator x-direction calculation
         for j in xrange(ny):
             phi_mid[j,:], mass[j,:]= PPM(phi_AY[j,:],cx[j,:],nx,epsilon,dx)
             OUT = flux(nx,dx,cx[j,:],phi_mid[j,:-1],mass[j,:])
             XC_AY[j,:-1] = conservative(nx,cx[j,:],OUT)
-        # XC_AY[-1,:], XC_AY[:,-1]= XC_AY[0,:], XC_AY[:,0]
-        XC_AY[-1,:], XC_AY[:,-1], XC_AY[0,:], XC_AY[:,0] = 0,0 ,0 ,0
-        XC_AY[-2,:], XC_AY[:,-2], XC_AY[1,:], XC_AY[:,1] = 0,0 ,0 ,0
+        XC_AY[:,-1] = np.where(cx[:,-1]<=0, 0, XC_AY[:,-2])
+        XC_AY[:,0] = np.where(cx[:,0]>=0, 0, XC_AY[:,1])
+        XC_AY[-1,:] = np.where(cy[-1,:]<=0, 0, XC_AY[-2,:])
+        XC_AY[0,:] = np.where(cy[0,:]>=0, 0, XC_AY[1,:])
+        # XC_AY[-1,:], XC_AY[:,-1]= 0, 0 #XC_AY[0,:], XC_AY[:,0]
+        # XC_AY[-1,:], XC_AY[:,-1], XC_AY[0,:], XC_AY[:,0] = 0,0 ,0 ,0
+        # XC_AY[-2,:], XC_AY[:,-2], XC_AY[1,:], XC_AY[:,1] = 0,0 ,0 ,0
         #the COSMIC splitting update
         phi = phiOld+ J*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
+        # phi[:,-1] = np.where(cx[:,-1]<=0, 0, phi[:,-2])
+        # phi[:,0] = np.where(cx[:,0]>=0, 0, phi[:,1])
+        # phi[-1,:] = np.where(cy[-1,:]<=0, 0, phi[-2,:])
+        # phi[0,:] = np.where(cy[0,:]>=0, 0, phi[1,:])
+        # phi[-1,:], phi[:,-1],phi[0,:], phi[:,0] = 0, 0, 0,0 
+        # phi[-1,:], phi[:,-1],phi[0,:], phi[:,0] = 0, 0,0,0
         # phi[-1,:], phi[:,-1] = phi[0,:], phi[:,0]
         phiOld = phi.copy() #update the time step
 
@@ -90,7 +126,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
     # return a
 
 def PPM(phiOld,c,nx,epsilon,dx,eta1=20 ,eta2 = 0.05):
-    phiOld = np.append(phiOld, [phiOld[1]])
+    # phiOld = np.append(phiOld)#, [phiOld[1]])
     dmphi = np.zeros_like(phiOld) #define the phi increment
     phi_r = np.zeros_like(phiOld) #define the right boundary
     phi_l = np.zeros_like(phiOld) #define the left boundary
@@ -108,41 +144,49 @@ def PPM(phiOld,c,nx,epsilon,dx,eta1=20 ,eta2 = 0.05):
     #Calculate dmphi
     dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
     # Updated boundary condition
-    dmphi[0] = dmphi[-2]
-    dmphi[-1] = dmphi[1]
+    dmphi[-1] = np.where(c[-1]<=0, 0, dmphi[-2])
+    dmphi[0] = np.where(c[0]>=0, 0, dmphi[1])
 
     eta[:] = 0
     #Calculate the right and left boundary value
     phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
-    phi_l[0] = phi_l[-2]
+    phi_l[0] = np.where(c[0]>=0, 0, phi_l[1])
 
     phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
-    phi_r[-1] =phi_r[1]
-
+    # phi_r[-1] =phi_r[1]
+    phi_r[-1] = np.where(c[-1]<=0, 0, phi_r[-2])
     #define parabolic profile
     daj = phi_r - phi_l
     phi_6 = 6*(phiOld-0.5*(phi_l+phi_r))
     for i in xrange(nx):
-        k= np.floor(i-N[i+1])%nx
-        k1 = np.floor(i+1-N[i+1])%nx
+        # k= np.floor(i-N[i+1])%nx
+        # k1 = np.floor(i+1-N[i+1])%nx
+        k= i-N[i+1]
+        k1 = i+1-N[i+1]
+        k = np.clip(k, 0, nx-1)
+        k1 = np.clip(k1, 0, nx-1)
         if dc[i+1]>= 0:
             phi_mid[i] = phi_r[k]-0.5*dc[i+1]*(daj[k]-(1-2*dc[i+1]/3.)*phi_6[k])
         else:
             phi_mid[i] = phi_l[k1]-0.5*dc[i+1]*(daj[k1]+(1+2*dc[i+1]/3.)*phi_6[k1])
-    phi_mid[-2] = phi_mid[0]
-    phi_mid[-1] = phi_mid[1]
-  
+    # phi_mid[-2] = phi_mid[0]
+    # phi_mid[-1] = phi_mid[1]
+    phi_mid[-1] = np.where(c[-1]<=0, 0, phi_mid[-2])
+    phi_mid[0] = np.where(c[0]>=0, 0, phi_mid[1])
+
     mass[0] = phiOld[0]*dx
     for j in xrange(1,nx):
         mass[j] = mass[j-1] +phiOld[j]*dx    
-    return phi_mid[:-1],mass
+    return phi_mid,mass
 
 def flux(nx,dx,c,phi_mid,mass):
     N = c.astype(int)
     dc = c-N
     OUT = np.zeros_like(phi_mid)
     for i in xrange(nx):
-        k= np.floor(i-N[i+1])%nx
+        # k= np.floor(i-N[i+1])%nx
+        k = i-N[i+1]
+        k = np.clip(k,0,nx-1)
         if c[i+1]>0:
             if i>k:
                 OUT[i] = (phi_mid[i]*dc[i+1]*dx+(mass[i]-mass[k]))/dx #+ int(N[i+1]/nx)*mass[-1]/dx
