@@ -4,6 +4,8 @@ def streamfunction(psi,dx,dy,dt,initialProfile):
     #define the velocity field
     u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy
     v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx
+    u[-1,:] = u[-2,:]
+    v[:,-1] = v[:,-2]
     # v[:,-1],v[-1,:] = v[:,0],v[0,:]
     # u[-1,:],u[:,-1] = u[0,:],u[:,0]
     # v[:,-1],v[-1,:] = v[:,-2],v[-1,:]

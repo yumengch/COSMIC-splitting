@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import matplotlib
+# import matplotlib.animation as animation
 def contours_solid(X,Y,phi,phiExact,phiOld,nt):
+    hfont = {'fontname':'FreeSerif'}
     fig = plt.figure(1)
     plt.clf()
     fig = plt.gcf()
@@ -15,8 +17,8 @@ def contours_solid(X,Y,phi,phiExact,phiOld,nt):
     plt.contour(X,Y,np.round(phi[4],3),np.arange(0.1,1.0,0.1),colors = 'k')
     plt.contour(X,Y,np.round(phi[5],3),np.arange(0.1,1.0,0.1),colors = 'k')
     plt.contour(X,Y,np.round(phiOld,3),np.arange(0.1,1.0,0.1),colors = 'k',linestyles = 'dashed')
-    plt.xticks(np.arange(0,11000,1000))
-    plt.yticks(np.arange(0,11000,1000))
+    plt.xticks(np.arange(0,11000,2000),**hfont)
+    plt.yticks(np.arange(0,11000,2000),**hfont)
     plt.gca().set_aspect('equal', adjustable='box')
     # levs = np.arange(-0.095,0.105,0.01)
     levs = np.arange(-0.95,1.,0.1)
@@ -28,16 +30,16 @@ def contours_solid(X,Y,phi,phiExact,phiOld,nt):
     cs.cmap.set_under('#400056')
     cs.cmap.set_over('#601100')
     cs.set_clim(-1.0, 1.0)
-    plt.figtext(.5, 0.07, "min = "+str(np.round(np.min(phi[-1]-phiOld),3))+', max = '+str(np.round(np.max(phi[-1]-phiOld),3)),horizontalalignment='center',
-     verticalalignment='center')
+    plt.figtext(.5, 0.12, "min = "+str(np.round(np.min(phi[-1]-phiOld),3))+', max = '+str(np.round(np.max(phi[-1]-phiOld),3)),horizontalalignment='center',
+     verticalalignment='center',fontsize = 36, **hfont)
     # cb = plt.colorbar(cs,orientation = 'horizontal',fraction=0.046, pad=0.04)
     # cb.set_ticks(np.round(np.arange(-0.08,0.1,0.02),2))
     # cb.set_ticklabels(['%1.2f' % i for i in np.arange(-0.08,0.1,0.02)])
     # cb.set_ticks(np.round(np.arange(-0.8,0.9,0.1),1))
     # cb.set_ticklabels(['%1.1f' % i for i in np.arange(-0.8,0.9,0.1)])
     plt.tight_layout()
-    plt.savefig('SOLUTON_solid'+str(nt)+'.pdf')
-    # plt.show()
+    matplotlib.rcParams.update({'font.size': 36})
+    plt.savefig('SOLUTON_solid'+str(nt)+'.pdf', transparent=True)
 
 def init(X,Y,u,v,phiCOS,x):
     fig = plt.figure(1)

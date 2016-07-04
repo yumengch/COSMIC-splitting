@@ -15,7 +15,7 @@ def terrain(x,z,xmin,zmin,nx,nz,Lx,Lz,t,nt,dt):
     def sigmaHeights(x,Z,zmax):
         "The height of sigma coordinate Z"
         hx = h(x)
-        return zmax*(Z-hx)/(zmax-hx)
+        return hx + Z*(zmax - hx)/zmax
 
     # parameters of the flow
     u0 = 10.
@@ -54,7 +54,7 @@ def terrain(x,z,xmin,zmin,nx,nz,Lx,Lz,t,nt,dt):
     psi[:,0] = psi[:,-1]
     Z = sigmaHeights(X,Z1,zmax)
     UchangewithT = False
-    plt.figure(1)
-    plt.contour(X,Z1,Z,levels = np.arange(0,zmax,1000),color = 'k')
-    plt.show()
+    # plt.figure(1)
+    # plt.contour(X,Z1,Z,levels = np.arange(0,zmax,1000),color = 'k')
+    # plt.show()
     return phi,X,Z,J,psi,UchangewithT

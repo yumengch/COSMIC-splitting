@@ -29,7 +29,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
     for t in xrange(int(nt)):
         #the y-direction calculation
         for i in xrange(nx):
-            phi_mid[:,i],mass[:,i] = PPM(phiOld[:,i],cy[:,i],ny,epsilon,dy)
+            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phiOld[:,i],cy[:,i],ny,epsilon,dy)
             OUT = flux(ny,dy,cy[:,i],phi_mid[:-1,i],mass[:,i])
             YC[:-1,i] = conservative(ny,cy[:,i],OUT)
             YA[:-1,i] = advective(ny,cy[:,i],OUT)
@@ -37,7 +37,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
         YC[-1,:],YC[:,-1] = YC[0,:],YC[:,0]
         #the x-direction calculation
         for j in xrange(ny):
-            phi_mid[j,:], mass[j,:]= PPM(phiOld[j,:],cx[j,:],nx,epsilon,dx)
+            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phiOld[j,:],cx[j,:],nx,epsilon,dx)
             OUT = flux(nx,dx,cx[j,:],phi_mid[j,:-1],mass[j,:])
             XC[j,:-1] = conservative(nx,cx[j,:],OUT)
             XA[j,:-1] = advective(nx,cx[j,:],OUT)
@@ -45,17 +45,17 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
         XA[-1,:], XA[:,-1] = XA[0,:], XA[:,0]
         XC[-1,:], XC[:,-1] = XC[0,:], XC[:,0]
         #intermediate calculation
-        phi_AX = phiOld + XA
-        phi_AY = phiOld + YA
+        phi_AX = phiOld + J*XA
+        phi_AY = phiOld + J*YA
 
         for i in xrange(nx):
-            phi_mid[:,i],mass[:,i] = PPM(phi_AX[:,i],cy[:,i],ny,epsilon,dy)
+            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phi_AX[:,i],cy[:,i],ny,epsilon,dy)
             OUT = flux(ny,dy,cy[:,i],phi_mid[:-1,i],mass[:,i])
             YC_AX[:-1,i] = conservative(ny,cy[:,i],OUT)
         YC_AX[-1,:], YC_AX[:,-1] = YC_AX[0,:], YC_AX[:,0]
 
         for j in xrange(ny):
-            phi_mid[j,:], mass[j,:]= PPM(phi_AY[j,:],cx[j,:],nx,epsilon,dx)
+            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phi_AY[j,:],cx[j,:],nx,epsilon,dx)
             OUT = flux(nx,dx,cx[j,:],phi_mid[j,:-1],mass[j,:])
             XC_AY[j,:-1] = conservative(nx,cx[j,:],OUT)
         XC_AY[-1,:], XC_AY[:,-1]= XC_AY[0,:], XC_AY[:,0]
@@ -66,7 +66,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
         phiOld = phi.copy() #update the time step
         if t == int(nt/2)-1:
             phiMid = phiOld.copy()
-        print t,phiOld[:-1,:-1].sum()#,phi_AX[:-2,:-2].sum(),YC_AX[:-2,:-2].sum(),XC[:-2,:-2].sum()
+        print t,np.max(phiOld[:-1,:-1])#,phi_AX[:-2,:-2].sum(),YC_AX[:-2,:-2].sum(),XC[:-2,:-2].sum()
     return phi,phiMid
     # return a
 

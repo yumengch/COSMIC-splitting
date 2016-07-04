@@ -1,81 +1,47 @@
-'''this file is used to implement the initial conditions to test advection schemes. The scheme uses Arakawa C 
-grid. The streamfunction thus must shift half of the grid points both in x and y direction'''
-import numpy as np
-import matplotlib.pyplot as plt
-def Smolarkiewicz(x,y,xmin,ymin,nx,ny,Lx,Ly,t,nt,dt):
-    psi= np.zeros((ny+1,nx+1))
-    A, k = 8, 4*np.pi/Lx
-    dx,dy = Lx/nx, Ly/ny
-    X,Y = np.meshgrid(x,y)
-    if t <0:
-        #define the initial cone phi and stream function
-        J = np.ones((ny+1,nx+1))
-        psi = A*np.sin(k*(X-0.5*dx))*np.cos(k*(Y-0.5*dy))
-        cone = lambda x,y: (1 - np.sqrt((X - dx*((nx/2)))**2 + (Y - dy*((ny/2)))**2)/(15))
-        phi = np.where((((X - dx*((nx/2)))**2 + (Y - dy*((ny/2)))**2) <= ((15)**2)), cone(X,Y),0 
-              )
-        UchangewithT = False
-        return phi,X,Y,J,psi,UchangewithT
+def solid(x, y, xmin, ymin, nx, ny, Lx, Ly, nt, dt, distorted, t, change = False):
+    '''Initial condition of solid body rotation test case'''
+    def f(x,Lx):
+        "the function that distort the grid"
+        return np.where(x<=0.5*Lx,
+                        (-1/np.sqrt(3))*x+Lx/4./np.sqrt(3)+0.5*Lx,
+                        np.where(x>0.5*Lx,
+                        1/np.sqrt(3)*(x-0.5*Lx)-Lx/4./np.sqrt(3)+0.5*Lx,0))
+
+    def computational(X,Y,ymax):
+        "The computational grids"
+        fx = f(x,Lx)
+        return np.where(Y>0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
+    #the necessary parameters
+    dy,dx = Ly/ny,Lx/nx
+    X,Y1 = np.meshgrid(x,y)
+    phi = np.zeros((ny+1, nx+1))
+    ymax = ymin+Ly
+    
+    #the computational domain
+    if distorted:
+        Y = computational(X,Y1,ymax)
+        J = np.where(Y1>0.5*Ly, 0.5*Ly/(Ly-f(X,Lx)),0.5*Ly/f(X,Lx))
     else:
-        #define the streamfunction
-        psi = Lx*(Y-0.5*dy)/(nt*dt)+np.cos(np.pi*t/nt)*A*np.sin(k*(X-0.5*dx+(Lx*t/nt)))*np.cos(k*(Y-0.5*dy))
-        psi[0,:] = psi[-1,:]
-        psi[:,0] = psi[:,-1]
-        return psi
+        Y = Y1
+        J= 1
 
-def constant(x,y,xmin,ymin,nx,ny,Lx,Ly,t,nt,dt):
-    psi = np.zeros((ny+1,nx+1))
-    J = np.ones((ny+1,nx+1))
-    X,Y = np.meshgrid(x,y)
-    phi = np.zeros((ny+1,nx+1))
-    dx,dy = Lx/nx, Ly/ny
-    u0 = 1.
-    psi = -(u0*Ly/(1*np.pi))*np.sin(2*np.pi*((X-0.5*dx)-xmin)/Lx)*np.sin(1*np.pi*((Y-0.5*dy)-ymin)/Ly)
-    psi[0,:] = psi[-1,:]
-    psi[:,0] = psi[:,-1]
-    phi[:,:] = 1
-    UchangewithT = False
-    return phi,X,Y,J,psi,UchangewithT
-
-def stirring(x,y,xmin,ymin,nx,ny,Lx,Ly,t,nt,dt):
-    psi= np.zeros((ny+1,nx+1))
-    X,Y = np.meshgrid(x,y)
-    dx,dy = Lx/nx, Ly/ny
-    u0 = 1.
-    if t <0:
-        J = np.ones((ny+1,nx+1))
-        phi = np.zeros((ny+1,nx+1))
-        rmax = 3*Lx/8.
-        r = np.sqrt((X-dx*(nx/2))**2+(Y-dy*(ny/2))**2)
-        psi = -(u0*Ly/(1*np.pi))*np.sin(2*np.pi*((X-0.5*dx)-xmin)/Lx)*np.sin(1*np.pi*((Y-0.5*dy)-ymin)/Ly)
-        
-        phi[:,:] = 0.5*(1+np.cos(np.pi*(np.minimum(r,rmax)/rmax)))
-        UchangewithT = True
-        return phi,X,Y,J,psi,UchangewithT
-    else:
-        psi = -Lx*(Y-0.5*dy)/(nt*dt)-np.cos(np.pi*t/nt)*(u0*Ly/(1*np.pi))*np.sin(2*np.pi*((X-0.5*dx)-xmin-(Lx*t/nt))/Lx)*np.sin(1*np.pi*((Y-0.5*dy)-ymin)/Ly)
-        psi[0,:] = psi[-1,:]
-        psi[:,0] = psi[:,-1]
-    return psi
-
-def solid(x,y,xmin,ymin,nx,ny,Lx,Ly,t,nt,dt):
-    psi= np.zeros((ny+1,nx+1))
-    J = np.ones((ny+1,nx+1))
-    X,Y = np.meshgrid(x,y)
-    phi = np.zeros((ny+1,nx+1))
-    dx,dy = Lx/nx, Ly/ny
-    A= 8
-    r = ((X-0.5*dx)-(0.5*nx)*dx)**2+((Y-0.5*dy)-(0.5*ny)*dy)**2
-    psi = A*r
-    psi[0,:] = psi[-1,:]
-    psi[:,0] = psi[:,-1]
-    r = np.sqrt((30)**2+(30)**2)
-    theta0 = np.arctan((30)/(30))
+    #initialization of the tracer distribution
+    A= np.pi*5/3/1000.
+    r = 2500
+    theta0 = np.pi/2.
     x0 = 0.5*nx*dx+r*np.cos(theta0)
     y0 = 0.5*ny*dy+ r*np.sin(theta0)
-    phi = np.exp(- 0.5*(((X-x0) / (3))**2 + ((Y-y0) / (3))**2))
-    UchangewithT = False
-    return phi,X,Y,J,psi,UchangewithT 
+    phi = np.exp(- 0.5*(((X-x0)/500)**2 + ((Y-y0)/500)**2))
+
+    #initialization of the streamfunction
+    if distorted:
+        Y = computational(X-0.5*dx,Y1-0.5*dy,ymax)
+    r = ((X-0.5*dx)-(0.5*nx)*dx)**2+((Y-0.5*dy)-0.5*Ly)**2
+    r1 = 4000.
+    r2 = 4500.
+    psi = A*r
+    Y = computational(X,Y1,ymax)
+    return phi,X,Y,J,psi
 
 def terrain(x,z,xmin,zmin,nx,nz,Lx,Lz,t,nt,dt):
     def h(x):
@@ -128,5 +94,65 @@ def terrain(x,z,xmin,zmin,nx,nz,Lx,Lz,t,nt,dt):
     # print Z
     psi[:,0] = psi[:,-1]
     Z = sigmaHeights(X,Z1,zmax)
-    UchangewithT = False
-    return phi,X,Z,J,psi,UchangewithT
+    return phi,X,Y,J,psi
+    
+def deformational(x,y,xmin,ymin,nx,ny,Lx,Ly,nt,dt, distorted, t, change):
+    '''Initial condition of deformational flow test case'''
+    def f(x,Lx):
+        "the function that distort the grid"
+        return np.where(x<=0.25*Lx,
+                        -(1./np.sqrt(3))*(x)+Lx/8./np.sqrt(3),
+                        np.where((x<0.5*Lx)&(x>=0.25*Lx),
+                        1./np.sqrt(3)*(x-0.25*Lx)-Lx/8./np.sqrt(3),
+                        np.where((x<0.75*Lx)&(x>=0.5*Lx),
+                        -(1./np.sqrt(3))*(x-0.5*Lx)+Lx/8./np.sqrt(3),1./np.sqrt(3)*(x-0.75*Lx)-Lx/8./np.sqrt(3))))
+     
+    def computational(X,Y,ymax):
+        "The computational grids"
+        fx = f(X,Lx)
+        return np.where(Y>=0, fx+Y*(1-fx/ymax),fx+Y*(1-fx/ymin))
+
+    #the necessary parameters
+    psi = np.zeros((ny+1,nx+1))
+    phi = np.zeros((ny+1,nx+1))
+    X,Y1 = np.meshgrid(x,y)
+    dx,dy = Lx/nx, Ly/ny
+    ymax = ymin+Ly
+    u0 = 10.
+
+    #the initialization of the test case for distorted grids:
+    if distorted:
+        Y = computational(X,Y1,ymax)
+        J = np.where(Y1>=0, ymax/(ymax-f(x,Lx)),ymin/(ymin-f(x,Lx)))
+        x0 = 5.*Lx/12.
+        y0 = 0.
+        x1 = 7.*Lx/12.
+        Y = computational(X,Y1,ymax)
+        phi = 0.95*np.exp(- 5.*((X-x0)**2 + (Y-y0)**2)) + 0.95*np.exp(- 5.*((X-x1)**2+ (Y-y0)**2))
+        Y = computational(X-0.5*dx,Y1-0.5*dy,ymax)       
+        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx) - (float(t)/nt))))**2)*((np.cos(np.pi*(Y-0.5*dy)/Lx))**2)      
+        Y = computational(x,Y1,ymax)
+    
+    #if the flow is time-dependent
+        if change:
+            Y = computational(X-0.5*dx,Y1-0.5*dy,ymax)
+            psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx) - (float(t)/nt))))**2)*((np.cos(Y-0.5*dy))**2)*np.cos(np.pi*t/nt)-Lx*(Y-0.5*dy)/(nt*dt)
+            return psi
+        else:
+            return phi,X,Y,J,psi
+    
+    #for orthogonal grids
+    else:
+        J = np.ones((ny+1,nx+1))
+        Y = Y1
+        x0 = 5.*Lx/12.
+        y0 = 0.
+        x1 = 7.*Lx/12.
+        phi = 0.95*np.exp(- 5.*((X-x0)**2 + (Y-y0)**2)) + 0.95*np.exp(- 5.*((X-x1)**2+ (Y-y0)**2))
+
+        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X-0.5*dx)/Lx - float(t)/nt)))**2)*((np.cos(np.pi*(Y-0.5*dy)/Ly))**2)*np.cos(np.pi*t/nt)-Lx*(Y-0.5*dy)/(nt*dt)
+        if change:
+            psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X-0.5*dx)/Lx - float(t)/nt)))**2)*((np.cos(np.pi*(Y-0.5*dy)/Ly))**2)*np.cos(np.pi*t/nt)-Lx*(Y-0.5*dy)/(nt*dt)
+            return psi
+        else:
+            return phi,X,Y,J,psi
