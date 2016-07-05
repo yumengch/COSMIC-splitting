@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx,cy):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
