@@ -1,5 +1,5 @@
 import numpy as np
-def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx,cy):
+def COSMIC(phiOld, cx, cy, dx, dy, xmin, ymin, dt, nt, J, initialProfile, mesh, change):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # Scheme: COSMIC splitting
@@ -57,9 +57,8 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
         #---------------------------------------------------
         # velocity updates for deformational flow test case
         #---------------------------------------------------
-        if UchangewithT == True:
-            psi = initialProfile(x,y,xmin,ymin,nx,ny,Lx,Ly,t,nt,dt)
-            u,v,cx,cy = streamfunction(psi,dx,dy,dt,initialProfile)
+        if change:
+            cx, cy = initialProfile(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change)
 
         #-------------------------------------------------------------
         # advective operator and non-cross term conservative operator 
@@ -69,7 +68,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phiOld[:,i],cy[:,i],ny,epsilon,dy)
+            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phiOld[:,i],cy[:,i],ny,dy)
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
@@ -94,7 +93,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phiOld[j,:],cx[j,:],nx,epsilon,dx)
+            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phiOld[j,:],cx[j,:],nx,dx)
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
@@ -123,7 +122,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phi_AX[:,i],cy[:,i],ny,epsilon,dy)
+            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phi_AX[:,i],cy[:,i],ny,dy)
             #---------------------------------
             # mass flux at each cell boundary
             #---------------------------------
@@ -144,7 +143,7 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phi_AY[j,:],cx[j,:],nx,epsilon,dx)
+            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phi_AY[j,:],cx[j,:],nx,dx)
             #----------------------------------
             # mass flux at each cell boundary
             #----------------------------------
@@ -169,26 +168,48 @@ def COSMIC(phiOld,nt,epsilon,dx,dy,J,initialProfile,xmin,ymin,dt,UchangewithT,cx
         phi[-1,:], phi[:,-1] = phi[0,:], phi[:,0]
         phiOld = phi.copy() #update the time step
 
-
-        #-----------------------------
-        # intermediate value storage
-        #----------------------------- 
-        if t == int(nt/6)-1:
-            phi0 = phiOld.copy()
-        if t == int(nt/3)-1:
-            phi1 = phiOld.copy()
-        if t == int(nt/2)-1:
-            phi2 = phiOld.copy()
-        if t == int(2*nt/3)-1:
-            phi3 = phiOld.copy()
-        if t == int(5*nt/6)-1:
-            phi4 = phiOld.copy()
-
         #----------------------------------------
         # print the time steps and maximum value
         #----------------------------------------
-        print t,np.max(phiOld)
-    return [phi0,phi1,phi2,phi3,phi4,phi]
+        print 'at ', t,' time step, the maximum of phi is ', np.max(phiOld)
+
+
+        #-----------------------------
+        # intermediate value storage
+        #-----------------------------
+        if initialProfile == solid: 
+            if t == int(nt/6)-1:
+                phi0 = phiOld.copy()
+            if t == int(nt/3)-1:
+                phi1 = phiOld.copy()
+            if t == int(nt/2)-1:
+                phi2 = phiOld.copy()
+            if t == int(2*nt/3)-1:
+                phi3 = phiOld.copy()
+            if t == int(5*nt/6)-1:
+                phi4 = phiOld.copy()
+        if initialProfile == orography:
+            if t == int(nt/2)-1:
+                phi0 = phiOld.copy()
+        if initialProfile == deform:
+            if t == int(nt/5)-1:
+                phi0 = phiOld.copy()
+            if t == int(2*nt/5)-1:
+                phi1 = phiOld.copy()
+            if t == int(3*nt/5)-1:
+                phi2 = phiOld.copy()
+            if t == int(4*nt/5)-1:
+                phi3 = phiOld.copy()
+
+    if initialProfile == solid: 
+        return [phi0, phi1, phi2, phi3, phi4, phi]
+    if initialProfile == orography:
+        return [phi0, phi]
+    if initialProfile == deform:
+        return [phi0, phi1, phi2, phi3, phi]
+
+
+    
 
 def PPM(phiOld, c, nx, dx, epsilon = 0.01, eta1=20, eta2 = 0.05):
 #---------------------------------------------------------------------------------
@@ -293,7 +314,7 @@ def PPM(phiOld, c, nx, dx, epsilon = 0.01, eta1=20, eta2 = 0.05):
     for i in xrange(nx):
         k= np.floor(i-c_N[i+1])%nx                               # departure points if u >= 0 
         k1 = np.floor(i+1-c_N[i+1])%nx                           # departure points if u < 0 
-        if dc[i+1]>= 0:
+        if c_r[i+1]>= 0:
             phi_mid[i] = phi_r[k]-0.5*c_r[i+1]*(daj[k]-(1-2*c_r[i+1]/3.)*phi_6[k])
         else:
             phi_mid[i] = phi_l[k1]-0.5*c_r[i+1]*(daj[k1]+(1+2*c_r[i+1]/3.)*phi_6[k1])
@@ -312,7 +333,7 @@ def PPM(phiOld, c, nx, dx, epsilon = 0.01, eta1=20, eta2 = 0.05):
 
 def flux(nx,dx,c,phi_mid,mass):
 #-----------------------------------------------------
-# Flux calculation at j+1/2
+# function: Flux calculation at j+1/2
 #-----------------------------------------------------
 
     #---------------------------------------
@@ -349,7 +370,7 @@ def flux(nx,dx,c,phi_mid,mass):
 
 def advective(nx,c,OUT):
 #-----------------------------------------------------
-# advecitve operator calculation
+# function: advecitve operator calculation
 #-----------------------------------------------------
 
     #---------------------------------------
@@ -361,17 +382,23 @@ def advective(nx,c,OUT):
         #----------------------------------------------------
         # the if statement is to update by upwind velocity
         #----------------------------------------------------
-        if c[i] >= 0 and c[i+1] >0:
+        if c[i] > 0 and c[i+1] >0:
             AX[i] = c[i]*(OUT[i-1]/c[i]-OUT[i]/c[i+1])
-        elif c[i] < 0 and c[i+1] <=0 :
+        elif c[i] == 0 and c[i+1] >0:                       # prevent from flux/0
+            AX[i] = 0
+        elif c[i] < 0 and c[i+1] <0 :
             AX[i] = c[i+1]*(OUT[i]/c[i+1]-OUT[i-1]/c[i])
+        elif c[i] < 0 and c[i+1] ==0 :
+            AX[i] = 0
+        elif c[i]*c[i+1]<0:
+            AX[i] = 0
         else:
             AX[i] = 0
     return AX[:]
 
 def conservative(nx,c,OUT):
 #-----------------------------------------------------
-# conservative operator calculation
+# function: conservative operator calculation
 #-----------------------------------------------------
     XC = np.zeros_like(OUT)
 
