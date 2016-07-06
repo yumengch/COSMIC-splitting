@@ -382,16 +382,10 @@ def advective(nx,c,OUT):
         #----------------------------------------------------
         # the if statement is to update by upwind velocity
         #----------------------------------------------------
-        if c[i] > 0 and c[i+1] >0:
-            AX[i] = c[i]*(OUT[i-1]/c[i]-OUT[i]/c[i+1])
-        elif c[i] == 0 and c[i+1] >0:                       # prevent from flux/0
-            AX[i] = 0
-        elif c[i] < 0 and c[i+1] <0 :
-            AX[i] = c[i+1]*(OUT[i]/c[i+1]-OUT[i-1]/c[i])
-        elif c[i] < 0 and c[i+1] ==0 :
-            AX[i] = 0
-        elif c[i]*c[i+1]<0:
-            AX[i] = 0
+        if c[i] >= 0 and c[i+1] >0:
+            AX[i] = OUT[i-1]-c[i]*OUT[i]/c[i+1]
+        elif c[i] < 0 and c[i+1] <= 0 :
+            AX[i] = OUT[i]-c[i+1]*(OUT[i-1]/c[i])
         else:
             AX[i] = 0
     return AX[:]

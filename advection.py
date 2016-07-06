@@ -78,6 +78,3 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
         np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4])
 
 
-
-
-
