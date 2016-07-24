@@ -69,6 +69,8 @@ def solid(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     # tracer distribution:
     phi = np.exp(- 0.5*(((X-x0)/500)**2 + ((Y-y0)/500)**2))
 
+    # dx = X[:, 1:] - X[:, :-1]
+    # print dx#, Y[:,0]
     #-----------------------------
     # Analytical solution 
     #-----------------------------
@@ -89,31 +91,52 @@ def solid(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     else:
         Y = Y1
     # streamfunction definition    
-    r = np.sqrt(((X-0.5*dx)-(0.5*nx)*dx)**2+((Y-0.5*dy)-0.5*Ly)**2)
+    r = np.sqrt((X-0.5*Lx)**2+(Y-0.5*Ly)**2)
     psi = A*r**2
+
+
+
+    if mesh == 'quad':
+        Y = comput_SB(X,Y1,ymax,f_quad(X,Lx))
+        # J= np.where(Y1>0.5*Ly, 0.5*Ly/(Ly-f_quad(X,Lx)),0.5*Ly/f_quad(X,Lx))
+    elif mesh == 'V':
+        Y = comput_SB(X,Y1,ymax,f_V(X,Lx))
+        # J= np.where(Y1>0.5*Ly, 0.5*Ly/(Ly-f_V(X,Lx)),0.5*Ly/f_V(X,Lx))
+    else:
+        Y = Y1
+        # J = np.ones_like(X)
+    
+    dx = np.zeros([ny+1, nx+1])
+    dy = np.zeros([ny+1, nx+1])
+    dx[:,:-1] = X[:, 1:] - X[:, :-1]
+    dx[:,-1] = dx[:,0]
+    dy[:-1, :] = Y[1:, :] - Y[:-1, :]
+    dy[-1,:] = dy[0,:]
 
     #-----------------------------
     # Courant number
     #-----------------------------
     u = np.zeros_like(psi)
     v = np.zeros_like(psi)
-    # the velocity field
-    u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy
-    v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx
-    u[-1,:] = u[-2,:]
-    v[:,-1] = v[:,-2]
-    
-    #the Courant number
-    cx = u*dt/dx
-    cy = v*dt/dy
 
-    return phi, phiExact, u, v, cx, cy, J
+    # the velocity field
+    u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy[:-1,:]
+    v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx[:,:-1]
+    u[-1,:] = u[0,:]
+    v[:,-1] = v[:,0]
+    # u[:,:] = 3.0
+    # v[:,:] = 0.
+    # #the Courant number
+    # cx = u*dt/dx
+    # cy = v*dt/dy
+
+    return phi, phiExact, u, v, X, Y, J
 
 def orography(x, z, xmin, zmin, nx, nz, Lx, Lz ,t, nt, dt, mesh, change):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # function: horizontal advection over orography
-# source: Schär, Christoph, et al. "A new terrain-following vertical coordinate 
+# source: Schar, Christoph, et al. "A new terrain-following vertical coordinate 
 #           formulation for atmospheric prediction models." Monthly Weather Review 
 #                130.10 (2002): 2459-2480.
 #---------------------------------------------------------------------------------
@@ -270,7 +293,7 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         else:
             Y = Y1
             J = np.ones_like(X)
-        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx) - (float(t)/nt))))**2)*((np.cos(Y-0.5*dy))**2)*np.cos(np.pi*t/nt)-Lx*(Y-0.5*dy)/(nt*dt)
+        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X/Lx) - (float(t)/nt))))**2)*((np.cos(Y))**2)*np.cos(np.pi*t/nt)-Lx*Y/(nt*dt)
         #-----------------------------
         # Courant number
         #-----------------------------
@@ -311,7 +334,7 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         Y = comput_deform(X-0.5*dx,Y1-0.5*dy,ymax)
     else:
         Y = Y1
-    psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx))))**2)*((np.cos(np.pi*(Y-0.5*dy)/Lx))**2)  
+    psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X/Lx))))**2)*((np.cos(np.pi*(Y)/Lx))**2)  
 
     #-----------------------------
     # Courant number
