@@ -121,8 +121,8 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
         #---------------------------------------------------------
         # advective operator updates
         #---------------------------------------------------------    
-        phi_AX = phiOld + XA
-        phi_AY = phiOld + YA
+        phi_AX = phiOld + J*XA
+        phi_AY = phiOld + J*YA
 
         # ---------------------------------------------------------------
         # conservative operator with cross-term updates in y direction

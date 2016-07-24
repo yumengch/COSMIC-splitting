@@ -77,4 +77,4 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
         np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4])
 
 
-advection(initialProfile = solid, mesh ='orthogo', xmin = 0., xmax = 10000.,  ymin = 0., ymax = 10000., nx = 50, ny = 50, dt = 2, nt = 300)
+advection(initialProfile = solid, mesh ='quad', xmin = 0., xmax = 10000.,  ymin = 0., ymax = 10000., nx = 50, ny = 50, dt = 2, nt = 300)
