@@ -52,12 +52,14 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
     phi = np.zeros_like(phiOld)
 
     # dx and dy calculation
-    dx[:,:-1] = X[:, 1:] - X[:, :-1]
+
+    dx[:,1:-1] = 0.5*(X[:, 1:-1] - X[:,:-2]) + 0.5*(X[:,2:] - X[:,1:-1])
+    dx[:, 0] = 0.5*(X[:,1] - X[:,0]) + 0.5*(X[:,-1] - X[:,-2])
     dx[:,-1] = dx[:,0]
-    dy[:-1, :] = Y[1:, :] - Y[:-1, :]
+    dy[1:-1, :] = 0.5*(Y[1:-1, :] - Y[:-2,:]) + 0.5*(Y[2:,:] - Y[1:-1,:])
+    dy[0, :] = 0.5*(Y[1,:] - Y[0,:]) + 0.5*(Y[-1,:] - Y[-2,:])
     dy[-1,:] = dy[0,:]
-    # print dy[:,-1]
-    # print dx, dy
+
     #---------------
     # time updates
     #---------------
@@ -217,8 +219,6 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
         return [phi0, phi1, phi2, phi3, phi]
 
 
-    
-
 def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
@@ -233,6 +233,7 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     # Basic grid information
     #-----------------------
     phiOld = np.append(phiOld, [phiOld[1]]) # one ghosted cell for PPM interpolation
+    dx = np.append(dx, [dx[1]])
     dmphi = np.zeros_like(phiOld)           # phi increment as in PPM paper
     phi_r = np.zeros_like(phiOld)           # phi at j+1/2 boundary
     phi_l = np.zeros_like(phiOld)           # phi at j-1/2 boundary
@@ -245,54 +246,63 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     dist = np.zeros_like(x)
 
     #---------------------------
-    # departure points find
-    #--------------------------
-    x_depart = np.mod((np.mod(x - 0.5*dx,L) - u*dt), L)
+    # departure position search
+    #---------------------------
+    x_depart = np.mod((np.mod(x - 0.5*dx[:-1],L) - u*dt), L)
 
-    idx = np.rint(np.floor(np.searchsorted(x, x_depart)%nx))
+    idx = np.floor(np.searchsorted(x, x_depart)%nx)
+
 
     for i in xrange(nx+1):
         k = idx[i]
-        if np.mod(x[k] - x_depart[i],L) > 0.5*dx[k] +10e-10:
-            idx[i] = int(np.floor((idx[i] -1)%nx))
-
+        if u[i] <0:
+            if np.mod(x[k] - x_depart[i],L) > 0.5*dx[k] +10e-10:
+                idx[i] = int(np.floor((idx[i] -1)%nx))
+        elif u[i]>0:
+            if np.mod(x[k] - x_depart[i],L)  > 0.5*dx[k]-10e-10:
+                idx[i] = int(np.floor((idx[i] -1)%nx))
 
     #---------------------------------------
     # phi increment as in PPM paper
     #---------------------------------------
     dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
-    # -------------------------------------------------------
-    # periodic boundary value updates
-    #-------------------------------------------------------
+    # # --------------------------------
+    # # periodic boundary value updates
+    # #---------------------------------
     dmphi[0] = dmphi[-2]
     dmphi[-1] = dmphi[1]    
 
-    #--------------
+    #-------------
     # no limiters
-    #--------------
+    #-------------
     eta[:] = 0
 
-    #------------------------------------------------------------
+    #-------------------------
     # phi at j-1/2 and j+1/2
-    #------------------------------------------------------------
+    #-------------------------
     phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[1:])+(phiOld[:-1] + 0.5*dmphi[:-1])*eta[1:]
     phi_l[0] = phi_l[-2] # boundary updates
 
     phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[:-1])+(phiOld[1:] - 0.5*dmphi[1:])*eta[:-1]
     phi_r[-1] =phi_r[1] # boundary updates
 
-    #------------------------------------------------------------
+    phi_r[-1] = phi_r[1]
+    phi_r[-2] = phi_r[0]
+
+    phi_l[1:] = phi_r[0:-1]
+    phi_l[0] = phi_r[-3]
+    #--------------------------------------------
     # piecewise parabolic subcell reconstruction
-    #-----------------------------------------------------------
+    #--------------------------------------------
     daj = phi_r - phi_l
     phi_6 = 6*(phiOld-0.5*(phi_l+phi_r))
 
-    #------------------------------------------------------------
+    #--------------------------------
     # PPM update to get phi at j+1/2
-    #-----------------------------------------------------------
+    #--------------------------------
     for i in xrange(nx):
         if u[i+1] >= 0.:
-            dist = np.mod((x[idx[i]] + 0.5*dx[idx[i]])-x_depart[i],L)
+            dist = np.fmod((x[idx[i+1]] + 0.5*dx[idx[i+1]])-x_depart[i+1],L)
             phi_mid[i] = (phi_r[idx[i+1]]-0.5*(dist/dx[idx[i+1]])*(daj[idx[i+1]]-(1-2*(dist/dx[idx[i+1]])/3.)*phi_6[idx[i+1]]))*dist
         else:
             dist = np.fmod(x_depart[i+1] - (x[idx[i+1]] - 0.5*dx[idx[i+1]]),L)
@@ -301,10 +311,10 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     # boundary updates
     phi_mid[-2] = phi_mid[0]
     phi_mid[-1] = phi_mid[1]
-    # print np.max(phi_mid)w
-    #-------------------
+
+    #-----------------
     # cumulative mass 
-    #-------------------    
+    #-----------------   
     mass[0] = phiOld[0]*dx[0]
     for j in xrange(1,nx):
         mass[j] = mass[j-1] +phiOld[j]*dx[j]
@@ -312,52 +322,48 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     return phi_mid[:-1],mass, idx
 
 def flux(nx,dx, phi_mid,mass, idx, u):
-#-----------------------------------------------------
+#-------------------------------------
 # function: Flux calculation at j+1/2
-#-----------------------------------------------------
+#-------------------------------------
 
-    #---------------------------------------
+    #---------------
     # Flux at j+1/2
-    #---------------------------------------
+    #---------------
     OUT = np.zeros_like(phi_mid)
 
 
     for i in xrange(nx):
         if u[i+1]>0:          # velocity u > 0
-            k = idx[i+1]
-            if i>k:           # if the departure cell is at the west of predicted cell 
-
+            k = np.floor((idx[i+1])%nx)
+            if i+1>=k:           # if the departure cell is at the west of predicted cell 
                 OUT[i] = (phi_mid[i]+(mass[i]-mass[k]))
-            elif i==k:        # if the departure cell is at the position of predicted cell
-                OUT[i] = phi_mid[i]
             else:         # if the departure cell is at the east of predicted cell
                 OUT[i] = (phi_mid[i]+mass[i]+mass[-1]-mass[k])
         elif u[i+1]<0:        # velocity u < 0            
-            k = int(np.floor((idx[i+1]-1)%nx))
+            k = np.floor((idx[i+1]-1)%nx)
             if k>=i+1:           # if the departure cell is at the east of predicted cell  
                 OUT[i] = (phi_mid[i]-mass[i]+mass[k])
             else:
                 OUT[i] = (phi_mid[i]+mass[-1]-mass[i]+mass[k])
-
         else:               # if velcity = 0
             OUT[i] = 0
-
+        # print OUT[i]
     return OUT
 
 def advective(nx,u, dx, OUT):
-#-----------------------------------------------------
+#------------------------------------------
 # function: advecitve operator calculation
-#-----------------------------------------------------
+#------------------------------------------
 
-    #---------------------------------------
+    #--------------------
     # advective operator 
-    #---------------------------------------
+    #--------------------
     AX = np.zeros_like(OUT)
 
     for i in xrange(nx):
-        #----------------------------------------------------
+        #--------------------------------------------------
         # the if statement is to update by upwind velocity
-        #----------------------------------------------------
+        #--------------------------------------------------
         if u[i] >= 0 and u[i+1] >0:
             AX[i] = (OUT[i-1]-(u[i]/dx[i])*OUT[i]/(u[i+1]/dx[i+1]))/dx[i]
         elif u[i] < 0 and u[i+1] <= 0 :
@@ -367,14 +373,14 @@ def advective(nx,u, dx, OUT):
     return AX[:]
 
 def conservative(nx,u, dx,OUT):
-#-----------------------------------------------------
+#---------------------------------------------
 # function: conservative operator calculation
-#-----------------------------------------------------
+#---------------------------------------------
     XC = np.zeros_like(OUT)
 
-    #-----------------------------------------------------
+    #-----------------------------------------
     # update by influx - outflux in each cell
-    #-----------------------------------------------------
+    #-----------------------------------------
     for i in xrange(nx):
         if u[i+1]<=0 and u[i]<=0:
             XC[i] = (OUT[i]-OUT[i-1])/dx[i]

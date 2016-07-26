@@ -43,7 +43,7 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
     #     change = True
     # else:
     #     change = False
-    phi = COSMIC(phiOld, X, Y, J*u, J*v, dt, nt, J, initialProfile, mesh, change)
+    phi = COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change)
     # phi = COSMIC(phiOld, u*dt/dx, v*dt/dy, dx, dy, xmin, ymin, dt, nt, J, initialProfile, mesh, change)
 
     # #--------------------------------------
