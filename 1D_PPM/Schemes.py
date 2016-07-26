@@ -41,7 +41,7 @@ def COSMIC(phiOld, x, u, dt, nt, J):
         #----------------
         # 1D PPM updates
         #----------------
-        phi_mid,mass, idx, x_depart = PPM(J*phiOld,u,nx,dx, L, x, dt)
+        phi_mid,mass, idx, x_depart = PPM(phiOld,u,nx,dx, L, x, dt)
         #---------------------------------
         # mass flux at each cell boundary
         #---------------------------------
@@ -60,7 +60,7 @@ def COSMIC(phiOld, x, u, dt, nt, J):
         #---------------------------
         # phi n+1 update
         #--------------------------- 
-        phi = phiOld + (1/J)*YC
+        phi = phiOld + YC
         phiOld = phi.copy()
         
     return phiOld
