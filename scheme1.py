@@ -1,5 +1,5 @@
 import numpy as np
-def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
+def COSMIC(phiOld, X, Y, u, v, dt, dx, dy, nt, J, initialProfile, mesh, change):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # Scheme: COSMIC splitting
@@ -24,8 +24,8 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
     #-----------------------------------------------
     phi_mid= np.zeros_like(phiOld)
     mass = np.zeros([ny,nx])
-    dx = np.zeros([ny+1, nx+1])
-    dy = np.zeros([ny+1, nx+1])
+    # dx = np.zeros([ny+1, nx+1])
+    # dy = np.zeros([ny+1, nx+1])
     #---------------------------------
     # XA, YA advective-form operator 
     # XC, YC conservative-form operator
@@ -51,15 +51,6 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
     #--------------------------------
     phi = np.zeros_like(phiOld)
 
-    # dx and dy calculation
-
-    dx[:,1:-1] = 0.5*(X[:, 1:-1] - X[:,:-2]) + 0.5*(X[:,2:] - X[:,1:-1])
-    dx[:, 0] = 0.5*(X[:,1] - X[:,0]) + 0.5*(X[:,-1] - X[:,-2])
-    dx[:,-1] = dx[:,0]
-    dy[1:-1, :] = 0.5*(Y[1:-1, :] - Y[:-2,:]) + 0.5*(Y[2:,:] - Y[1:-1,:])
-    dy[0, :] = 0.5*(Y[1,:] - Y[0,:]) + 0.5*(Y[-1,:] - Y[-2,:])
-    dy[-1,:] = dy[0,:]
-
     #---------------
     # time updates
     #---------------
@@ -67,8 +58,8 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
         #---------------------------------------------------
         # velocity updates for deformational flow test case
         #---------------------------------------------------
-        # if change:
-        #     cx, cy = initialProfile(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change)
+        if change:
+            u, v = initialProfile(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change)
 
         #-------------------------------------------------------------
         # advective operator and non-cross term conservative operator 
@@ -79,17 +70,17 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
             # 1D PPM updates
             #------------------
 
-            phi_mid,mass, idx = PPM((1/J[:,i])*phiOld[:,i],v[:,i],ny,dy[:,i], Ly, Y[:,i], dt)
+            phi_mid,mass, idx = PPM((1/J[:,i])*phiOld[:,i],J[:,i]*v[:,i],ny,dy[:,i], Ly, Y[:,i], dt)
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
-            OUT = flux(ny,dy[:,i], phi_mid[:-1],mass, idx, v[:,i])
+            OUT = flux(ny,dy[:,i], phi_mid[:-1],mass, idx, J[:,i]*v[:,i])
             #----------------------------------------------
             #  adavective and conservative operator updates
             #----------------------------------------------
-            YC[:-1,i] = conservative(ny,v[:,i],dy[:,i],OUT)
+            YC[:-1,i] = conservative(ny,J[:,i]*v[:,i],dy[:,i],OUT)
 
-            YA[:-1,i] = advective(ny,v[:,i],dy[:,i],OUT)
+            YA[:-1,i] = advective(ny,J[:,i]*v[:,i],dy[:,i],dt, OUT)
         #---------------------------------------
         # periodic boundary value updates
         #---------------------------------------
@@ -104,27 +95,30 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid, mass, idx = PPM((1/J[j,:])*phiOld[j,:],u[j,:],nx,dx[j,:], Lx,X[j,:], dt)
+            phi_mid, mass, idx = PPM((1/J[j,:])*phiOld[j,:],J[j,:]*u[j,:],nx,dx[j,:], Lx,X[j,:], dt)
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
-            OUT = flux(nx,dx[j,:],phi_mid[:-1],mass, idx, u[j,:])
+            OUT = flux(nx,dx[j,:],phi_mid[:-1],mass, idx, J[j,:]*u[j,:])
+
             #----------------------------------------------
             #  adavective and conservative operator updates
             #----------------------------------------------    
-            XC[j,:-1] = conservative(nx,u[j,:], dx[j,:], OUT)
-            XA[j,:-1] = advective(nx,u[j,:], dx[j,:], OUT)
+            XC[j,:-1] = conservative(nx,J[j,:]*u[j,:], dx[j,:], OUT)
+            XA[j,:-1] = advective(nx,J[j,:]*u[j,:], dx[j,:], dt, OUT)
         #---------------------------------------------------------
         # periodic boundary value updates
         #---------------------------------------------------------            
         XA[-1,:], XA[:,-1] = XA[0,:], XA[:,0]
         XC[-1,:], XC[:,-1] = XC[0,:], XC[:,0]
 
+        # print np.max(XA), np.max(XC)
+
         #---------------------------------------------------------
         # advective operator updates
         #---------------------------------------------------------    
-        phi_AX = phiOld + J*XA
-        phi_AY = phiOld + J*YA
+        phi_AX = phiOld + XA
+        phi_AY = phiOld + YA
 
         # ---------------------------------------------------------------
         # conservative operator with cross-term updates in y direction
@@ -133,15 +127,16 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid, mass, idx = PPM((1/J[:,i])*phi_AX[:,i],v[:,i],ny,dy[:,i], Ly,Y[:,i], dt)
+
+            phi_mid, mass, idx = PPM((1/J[:,i])*phi_AX[:,i],J[:,i]*v[:,i],ny,dy[:,i], Ly,Y[:,i], dt)
             #---------------------------------
             # mass flux at each cell boundary
             #---------------------------------
-            OUT = flux(ny,dy[:,i],phi_mid[:-1],mass, idx, v[:,i])
+            OUT = flux(ny,dy[:,i],phi_mid[:-1],mass, idx, J[:,i]*v[:,i])
             #-------------------------------
             # conservative operator updates
             #-------------------------------
-            YC_AX[:-1,i] = conservative(ny,v[:,i], dy[:,i], OUT)
+            YC_AX[:-1,i] = conservative(ny,J[:,i]*v[:,i], dy[:,i], OUT)
         #----------------------------------
         # periodic boundary value updates
         #----------------------------------
@@ -154,15 +149,15 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid, mass, idx = PPM((1/J[j,:])*phi_AY[j,:],u[j,:],nx,dx[j,:], Lx,X[j,:], dt)
+            phi_mid, mass, idx = PPM((1/J[j,:])*phi_AY[j,:],J[j,:]*u[j,:],nx,dx[j,:], Lx,X[j,:], dt)
             #----------------------------------
             # mass flux at each cell boundary
             #----------------------------------
-            OUT = flux(nx,dx[j,:],phi_mid[:-1],mass, idx, u[j,:])
+            OUT = flux(nx,dx[j,:],phi_mid[:-1],mass, idx, J[j,:]*u[j,:])
             #----------------------------------------------
             # conservative operator updates
             #----------------------------------------------                
-            XC_AY[j,:-1] = conservative(nx,u[j,:], dx[j,:], OUT)
+            XC_AY[j,:-1] = conservative(nx,u[j,:], J[j,:]*dx[j,:], OUT)
         #-------------------------------------------------------
         # periodic boundary value updates
         #------------------------------------------------------- 
@@ -171,7 +166,7 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
         #-------------------------------------------------------
         # Final COSMIC splitting updates
         #------------------------------------------------------- 
-        phi = phiOld+J*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
+        phi = phiOld+J*(0.5*(XC_AY)+0.5*(YC_AX))
 
         #-------------------------------------------------------
         # periodic boundary value updates
@@ -187,36 +182,37 @@ def COSMIC(phiOld, X, Y, u, v, dt, nt, J, initialProfile, mesh, change):
         #-----------------------------
         # intermediate value storage
         #-----------------------------
-        if initialProfile == solid: 
-            if t == int(nt/6)-1:
-                phi0 = phiOld.copy()
-            if t == int(nt/3)-1:
-                phi1 = phiOld.copy()
-            if t == int(nt/2)-1:
-                phi2 = phiOld.copy()
-            if t == int(2*nt/3)-1:
-                phi3 = phiOld.copy()
-            if t == int(5*nt/6)-1:
-                phi4 = phiOld.copy()
-        if initialProfile == orography:
-            if t == int(nt/2)-1:
-                phi0 = phiOld.copy()
-        if initialProfile == deform:
-            if t == int(nt/5)-1:
-                phi0 = phiOld.copy()
-            if t == int(2*nt/5)-1:
-                phi1 = phiOld.copy()
-            if t == int(3*nt/5)-1:
-                phi2 = phiOld.copy()
-            if t == int(4*nt/5)-1:
-                phi3 = phiOld.copy()
+    #     if initialProfile == solid: 
+    #         if t == int(nt/6)-1:
+    #             phi0 = phiOld.copy()
+    #         if t == int(nt/3)-1:
+    #             phi1 = phiOld.copy()
+    #         if t == int(nt/2)-1:
+    #             phi2 = phiOld.copy()
+    #         if t == int(2*nt/3)-1:
+    #             phi3 = phiOld.copy()
+    #         if t == int(5*nt/6)-1:
+    #             phi4 = phiOld.copy()
+    #     if initialProfile == orography:
+    #         if t == int(nt/2)-1:
+    #             phi0 = phiOld.copy()
+    #     if initialProfile == deform:
+    #         if t == int(nt/5)-1:
+    #             phi0 = phiOld.copy()
+    #         if t == int(2*nt/5)-1:
+    #             phi1 = phiOld.copy()
+    #         if t == int(3*nt/5)-1:
+    #             phi2 = phiOld.copy()
+    #         if t == int(4*nt/5)-1:
+    #             phi3 = phiOld.copy()
 
-    if initialProfile == solid: 
-        return [phi0, phi1, phi2, phi3, phi4, phi]
-    if initialProfile == orography:
-        return [phi0, phi]
-    if initialProfile == deform:
-        return [phi0, phi1, phi2, phi3, phi]
+    # if initialProfile == solid: 
+    #     return [phi0, phi1, phi2, phi3, phi4, phi]
+    # if initialProfile == orography:
+    #     return [phi0, phi]
+    # if initialProfile == deform:
+    #     return [phi0, phi1, phi2, phi3, phi]
+    return phi
 
 
 def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
@@ -232,8 +228,9 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #-----------------------
     # Basic grid information
     #-----------------------
+    idx = np.zeros_like(phiOld)
     phiOld = np.append(phiOld, [phiOld[1]]) # one ghosted cell for PPM interpolation
-    dx = np.append(dx, [dx[1]])
+
     dmphi = np.zeros_like(phiOld)           # phi increment as in PPM paper
     phi_r = np.zeros_like(phiOld)           # phi at j+1/2 boundary
     phi_l = np.zeros_like(phiOld)           # phi at j-1/2 boundary
@@ -248,20 +245,29 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #---------------------------
     # departure position search
     #---------------------------
-    x_depart = np.mod((np.mod(x - 0.5*dx[:-1],L) - u*dt), L)
 
-    idx = np.floor(np.searchsorted(x, x_depart)%nx)
-
-
+    x_depart = x - 0.5*dx - u*dt
+    while len(np.where(np.logical_or(x_depart < x[0], x_depart > x[-1]))[0]) > 0:
+        x_depart = np.where(x_depart < x[0], x_depart + L, x_depart)
+        x_depart = np.where(x_depart > x[-1], x_depart - L, x_depart)
+    # idx = np.where(idx ==0, -1, idx)
+    x_r = np.zeros_like(x)
+    x_r[:-1] = x[:-1] + 0.5*(x[1:] - x[:-1])
+    x_r[-1] = x[-1] + 0.5*(x[1] - x[0])
+    x_l = np.zeros_like(x) 
+    x_l[1:] = x[1:] - 0.5*(x[1:] - x[:-1])
+    x_l[0] = x[0] - 0.5*(x[-1] - x[-2])
+    # idx = np.where(idx ==0, -1, idx)
     for i in xrange(nx+1):
-        k = idx[i]
-        if u[i] <0:
-            if np.mod(x[k] - x_depart[i],L) > 0.5*dx[k] +10e-10:
-                idx[i] = int(np.floor((idx[i] -1)%nx))
-        elif u[i]>0:
-            if np.mod(x[k] - x_depart[i],L)  > 0.5*dx[k]-10e-10:
-                idx[i] = int(np.floor((idx[i] -1)%nx))
+        for j in xrange(nx+1):
+            if  x_r[i] > x_depart[j] and  x_depart[j] > x_l[i]:
+                idx[j] = i
+    for i in xrange(nx+1):
+        for j in xrange(nx+1):
+            if abs(x_depart[j] - x_r[i])<10e-10:
+                idx[j] = i
 
+    dx = np.append(dx, [dx[1]])
     #---------------------------------------
     # phi increment as in PPM paper
     #---------------------------------------
@@ -272,6 +278,12 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     dmphi[0] = dmphi[-2]
     dmphi[-1] = dmphi[1]    
 
+    # dmq[1:-1] = (dx[1:-1]/(dx[0:-2] + dx[1:-1] +
+    #     dx[2:]))*(((2*dx[0:-2] + dx[1:-1]) / (dx[2:] + dx[1:-1]) )*(phiOld[2:] -
+    #         phiOld[1:-1] ) + ( (2*dx[2:] + dx[1:-1]) / (dx[:-2] + dx[1:-1]) )* 
+    #             (phiOld[1:-1] - phiOld[0:-2]))
+    # dmq[0] = dmq[-2]
+    # dmq[-1] = dmq[1]
     #-------------
     # no limiters
     #-------------
@@ -289,8 +301,20 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     phi_r[-1] = phi_r[1]
     phi_r[-2] = phi_r[0]
 
-    phi_l[1:] = phi_r[0:-1]
-    phi_l[0] = phi_r[-3]
+    # phi_r[1:-2] = phiOld[1:-2] + (dx[1:-2]/(dx[1:-2] + dx[2:-1]))*(phiOld[2:-1]- phiOld[1:-2])+(1/(dx[:-3] + dx[1:-2] + dx[2:-1] + dx[3:]))*((2*dx[2:-1]*dx[1:-2]/(dx[1:-2] + dx[2:-1]))*
+    #             ( (dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) - (dx[3:] + dx[2:-1])/(2*dx[2:-1] + dx[1:-2]) )*(phiOld[2:-1] - phiOld[1:-2])- 
+    #                 dx[1:-2]*dmq[2:-1]*(dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) + 
+    #                   dx[2:-1]*dmq[1:-2]*(dx[2:-1] + dx[3:])/(dx[1:-2] + 2*dx[2:-1]))
+    # phi_r[0] = phiOld[0] + (dx[0]/(dx[0] + dx[1]))*(phiOld[1]- phiOld[0]) + (1/(dx[-3] + dx[0] + dx[1] + dx[2]))*((2*dx[1]*dx[0]/(dx[0] + dx[1]))* 
+    #          ( (dx[-3] + dx[0])/(2*dx[0] + dx[1]) - (dx[2] + dx[1])/(2*dx[1] + dx[0]) )*(phiOld[1] - phiOld[0])- 
+    #             dx[0]*dmq[1]*(dx[-3] + dx[0])/(2*dx[0] + dx[1]) + 
+    #               dx[1]*dmq[0]*(dx[1] + dx[2])/(dx[0] + 2*dx[1]))
+    # phi_r[-1] = phi_r[1]
+    # phi_r[-2] = phi_r[0]
+
+    # phi_l[1:] = phi_r[0:-1]
+    # phi_l[0] = phi_r[-3]
+    dx = dx[:-1]
     #--------------------------------------------
     # piecewise parabolic subcell reconstruction
     #--------------------------------------------
@@ -302,11 +326,11 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #--------------------------------
     for i in xrange(nx):
         if u[i+1] >= 0.:
-            dist = np.fmod((x[idx[i+1]] + 0.5*dx[idx[i+1]])-x_depart[i+1],L)
-            phi_mid[i] = (phi_r[idx[i+1]]-0.5*(dist/dx[idx[i+1]])*(daj[idx[i+1]]-(1-2*(dist/dx[idx[i+1]])/3.)*phi_6[idx[i+1]]))*dist
+            dist[i] = x_r[idx[i+1]]-x_depart[i+1]
+            phi_mid[i] = (phi_r[idx[i+1]]-0.5*(dist[i]/dx[idx[i+1]])*(daj[idx[i+1]]-(1-2*(dist[i]/dx[idx[i+1]])/3.)*phi_6[idx[i+1]]))*dist[i]
         else:
-            dist = np.fmod(x_depart[i+1] - (x[idx[i+1]] - 0.5*dx[idx[i+1]]),L)
-            phi_mid[i] = (phi_l[idx[i+1]]+0.5*(dist/dx[idx[i+1]])*(daj[idx[i+1]]+(1-2*(dist/dx[idx[i+1]])/3.)*phi_6[idx[i+1]]))*dist
+            dist[i] = x_depart[i+1] - x_l[idx[i+1]]
+            phi_mid[i] = (phi_l[idx[i+1]]+0.5*(dist[i]/dx[idx[i+1]])*(daj[idx[i+1]]+(1-2*(dist[i]/dx[idx[i+1]])/3.)*phi_6[idx[i+1]]))*dist[i]
 
     # boundary updates
     phi_mid[-2] = phi_mid[0]
@@ -350,7 +374,7 @@ def flux(nx,dx, phi_mid,mass, idx, u):
         # print OUT[i]
     return OUT
 
-def advective(nx,u, dx, OUT):
+def advective(nx,u, dx, dt, OUT):
 #------------------------------------------
 # function: advecitve operator calculation
 #------------------------------------------
@@ -360,14 +384,19 @@ def advective(nx,u, dx, OUT):
     #--------------------
     AX = np.zeros_like(OUT)
 
+
     for i in xrange(nx):
         #--------------------------------------------------
         # the if statement is to update by upwind velocity
         #--------------------------------------------------
         if u[i] >= 0 and u[i+1] >0:
-            AX[i] = (OUT[i-1]-(u[i]/dx[i])*OUT[i]/(u[i+1]/dx[i+1]))/dx[i]
+            c1 = u[i]
+            c2 = u[i+1]
+            AX[i] = (OUT[i-1]/dt/(u[i]*dt))-c1*(OUT[i]/dt/c2/(u[i+1]*dt))
         elif u[i] < 0 and u[i+1] <= 0 :
-            AX[i] = (OUT[i]-(u[i+1]/dx[i+1])*(OUT[i-1]/(u[i]/dx[i])))/dx[i]
+            c1 = u[i]
+            c2 = u[i+1]
+            AX[i] = OUT[i]/dt/(u[i+1]*dt)-c2*OUT[i-1]/c1/dt/(u[i]*dt)
         else:
             AX[i] = 0
     return AX[:]

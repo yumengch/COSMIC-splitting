@@ -131,7 +131,7 @@ def solid(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     # cx = u*dt/dx
     # cy = v*dt/dy
 
-    return phi, phiExact, u, v, X, Y, J
+    return phi, phiExact, u, v, X, Y, dx, dy,J
 
 def orography(x, z, xmin, zmin, nx, nz, Lx, Lz ,t, nt, dt, mesh, change):
 #---------------------------------------------------------------------------------
@@ -273,6 +273,7 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     # Basic grid information
     #-----------------------
     X,Y1 = np.meshgrid(x,y)
+    # print X
     dx,dy = Lx/nx, Ly/ny
     ymax = ymin+Ly
 
@@ -294,15 +295,21 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         else:
             Y = Y1
             J = np.ones_like(X)
-        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X/Lx) - (float(t)/nt))))**2)*((np.cos(Y))**2)*np.cos(np.pi*t/nt)-Lx*Y/(nt*dt)
+        dx = np.zeros([ny+1, nx+1])
+        dy = np.zeros([ny+1, nx+1])
+        dx[:,:-1] = X[:, 1:] - X[:, :-1]
+        dx[:,-1] = dx[:,0]
+        dy[:-1, :] = Y[1:, :] - Y[:-1, :]
+        dy[-1,:] = dy[0,:]
+        psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx) - (float(t)/nt))))**2)*((np.cos(Y-0.5*dy))**2)*np.cos(np.pi*t/nt)-Lx*(Y-0.5*dy)/(nt*dt)
         #-----------------------------
         # Courant number
         #-----------------------------
         u = np.zeros_like(psi)
         v = np.zeros_like(psi)
         # the velocity field
-        u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy
-        v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx
+        u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy[:-1,:]
+        v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx[:,:-1]
         v[:,-1],v[-1,:] = v[:,0],v[0,:]
         u[-1,:],u[:,-1] = u[0,:],u[:,0]
         
@@ -310,7 +317,7 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         cx = J*u*dt/dx
         cy = J*v*dt/dy
 
-        return cx, cy
+        return u, v
 
     #-----------------------------
     # Initial tracer distribution
@@ -322,7 +329,8 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         Y = Y1
         J = np.ones_like(X)
     phi = 0.95*np.exp(- 5*((X-x0)**2 + (Y-y0)**2)) + 0.95*np.exp(- 5*((X-x1)**2+ (Y-y0)**2))
-
+    psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*(((X-0.5*dx)/Lx) - (float(0)/nt))))**2)*((np.cos(np.pi*(Y-0.5*dy)/Lx))**2)      
+       
     #-----------------------------
     # Expected analytical solution
     #-----------------------------
@@ -335,7 +343,13 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
         Y = comput_deform(X-0.5*dx,Y1-0.5*dy,ymax)
     else:
         Y = Y1
-    psi = (u0/nt/dt)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X/Lx))))**2)*((np.cos(np.pi*(Y)/Lx))**2)  
+ 
+    dx = np.zeros([ny+1, nx+1])
+    dy = np.zeros([ny+1, nx+1])
+    dx[:,:-1] = X[:, 1:] - X[:, :-1]
+    dx[:,-1] = dx[:,0]
+    dy[:-1, :] = Y[1:, :] - Y[:-1, :]
+    dy[-1,:] = dy[0,:]
 
     #-----------------------------
     # Courant number
@@ -343,8 +357,8 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     u = np.zeros_like(psi)
     v = np.zeros_like(psi)
     # the velocity field
-    u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy
-    v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx
+    u[:-1,:] = -(psi[1:,:]-psi[:-1,:])/dy[:-1,:]
+    v[:,:-1] =  (psi[:,1:]-psi[:,:-1])/dx[:,:-1]
     v[:,-1],v[-1,:] = v[:,0],v[0,:]
     u[-1,:],u[:,-1] = u[0,:],u[:,0]
 
@@ -352,5 +366,5 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     cx = u*dt/dx
     cy = v*dt/dy    
     
-    return phi, phiExact, u, v, cx, cy, J
+    return phi, phiExact, u, v, X, Y, dx, dy, J
         
