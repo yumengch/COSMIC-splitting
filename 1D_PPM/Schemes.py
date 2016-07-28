@@ -94,10 +94,17 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     mass = np.zeros(nx)
     dist = np.zeros_like(x)
         
+    #---------------------------------------
+    # departure point  find
+    # --------------------------------------- 
     x_depart = x - 0.5*dx - u*dt
     while len(np.where(np.logical_or(x_depart < x[0], x_depart > x[-1]))[0]) > 0:
         x_depart = np.where(x_depart < x[0], x_depart + L, x_depart)
         x_depart = np.where(x_depart > x[-1], x_depart - L, x_depart)
+
+    #---------------------------------------
+    # define cell boundaries
+    # --------------------------------------- 
     x_r = np.zeros_like(x)
     x_r[:-1] = x[:-1] + 0.5*(x[1:] - x[:-1])
     x_r[-1] = x[-1] + 0.5*(x[1] - x[0])
@@ -105,6 +112,9 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     x_l[1:] = x[1:] - 0.5*(x[1:] - x[:-1])
     x_l[0] = x[0] - 0.5*(x[-1] - x[-2])
 
+    #---------------------------------------
+    # index of departure cell search
+    # --------------------------------------- 
     for i in xrange(nx+1):
         for j in xrange(nx+1):
             if  x_r[i] > x_depart[j] and  x_depart[j] > x_l[i]:
@@ -116,13 +126,7 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
 
     #---------------------------------------
     # phi increment as in PPM paper
-    # ---------------------------------------
-    # dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
-    # # --------------------------------
-    # # periodic boundary value updates
-    # #---------------------------------
-    # dmphi[0] = dmphi[-2]
-    # dmphi[-1] = dmphi[1]    
+    # ---------------------------------------  
     dx = np.append(dx, [dx[1]])
     dmq[1:-1] = (dx[1:-1]/(dx[0:-2] + dx[1:-1] +
             dx[2:]))*(((2*dx[0:-2] + dx[1:-1]) / (dx[2:] + dx[1:-1]) )*(phiOld[2:] -
@@ -138,11 +142,7 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #-------------------------
     # phi at j-1/2 and j+1/2
     #-------------------------
-    # phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[1:])+(phiOld[:-1] + 0.5*dmphi[:-1])*eta[1:]
-    # phi_l[0] = phi_l[-2] # boundary updates
 
-    # phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[:-1])+(phiOld[1:] - 0.5*dmphi[1:])*eta[:-1]
-    # phi_r[-1] =phi_r[1] # boundary updates
     phi_r[1:-2] = phiOld[1:-2] + (dx[1:-2]/(dx[1:-2] + dx[2:-1]))*(phiOld[2:-1]- phiOld[1:-2])+(1/(dx[:-3] + dx[1:-2] + dx[2:-1] + dx[3:]))*((2*dx[2:-1]*dx[1:-2]/(dx[1:-2] + dx[2:-1]))*
                 ( (dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) - (dx[3:] + dx[2:-1])/(2*dx[2:-1] + dx[1:-2]) )*(phiOld[2:-1] - phiOld[1:-2])- 
                     dx[1:-2]*dmq[2:-1]*(dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) + 

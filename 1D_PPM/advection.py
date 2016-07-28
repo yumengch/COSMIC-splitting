@@ -19,7 +19,7 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     # spatial points for plotting and for defining initial conditions
     x = np.linspace(xmin, xmax, nx+1)
     def f(x):
-        return 0.8
+        return -0.4
     def comput(x,L):
         #-------------------------------------
         # unequidistant computational domain 
