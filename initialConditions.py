@@ -366,5 +366,5 @@ def deform(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     cx = u*dt/dx
     cy = v*dt/dy    
     
-    return phi, phiExact, u, v, X, Y, dx, dy, J
+    return phi, cx, cy, u, v, X, Y, dx, dy, J
         

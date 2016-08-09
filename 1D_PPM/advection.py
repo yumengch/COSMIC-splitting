@@ -41,19 +41,19 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     # print x1
     # x1 = x
 
-    dx = np.zeros([nx+1])
+    dx1 = np.zeros([nx+1])
     # J = np.zeros_like(dx)
-    dx[1:-1] = 0.5*(x1[2:] - x1[1:-1]) + 0.5*(x1[1:-1] - x1[:-2])
-    dx[0] = 0.5*(x1[1] - x1[0]) + 0.5*(x1[-1] - x1[-2])
-    dx[-1] = dx[0]
-
+    dx1[1:-1] = 0.5*(x1[2:] - x1[1:-1]) + 0.5*(x1[1:-1] - x1[:-2])
+    dx1[0] = 0.5*(x1[1] - x1[0]) + 0.5*(x1[-1] - x1[-2])
+    dx1[-1] = dx1[0]
+    dx = (xmax - xmin)/nx
     # initial conditions
     u = np.zeros(nx+1)
     u[:] = 2.337								# velocity (u) change at this line!!!!
 
     print "Courant number:", np.max(u*dt/dx)
     # print np.max(J[1:]*u[1:] - J[:-1]*u[:-1]) 
-    phiOld= initialProfile(x1)
+    phiOld= initialProfile(x)
 
     # analytical solution
     distanceTravelled = u*dt*nt
@@ -61,7 +61,7 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     phiExact = initialProfile((x1 - distanceTravelled)%(xmax - xmin))
 
     # 1D PPM
-    phi = COSMIC(phiOld.copy(), x1, u, dt, dx, nt,J)
+    phi = COSMIC(J*phiOld.copy(), x, u, dt, dx1, dx, nt,J)
 
     # # calculate the error norms 
     errors = errorNorms(phi.copy(), phiExact)
@@ -77,4 +77,4 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     plt.show()
 
 
-advection(initialProfile=cosBell, xmin = -1., xmax = 1., nx = 100, nt = 100,  dt = 5)
+advection(initialProfile=cosBell, xmin = -1., xmax = 1., nx = 100, nt = 200,  dt = 5)

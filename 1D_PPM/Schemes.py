@@ -1,5 +1,5 @@
 import numpy as np
-def COSMIC(phiOld, x, u, dt, dx, nt, J):
+def COSMIC(phiOld, x, u, dt, dx1,dx, nt, J):
 #------------------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # Scheme: COSMIC splitting
@@ -42,7 +42,7 @@ def COSMIC(phiOld, x, u, dt, dx, nt, J):
         #----------------
         # 1D PPM updates
         #----------------
-        phi_mid,mass, idx, dist = PPM(phiOld,u,nx,dx, L, x, dt)
+        phi_mid,mass, idx, dist = PPM(phiOld,u,nx,dx,dx1, L, x, dt)
         #---------------------------------
         # mass flux at each cell boundary
         #---------------------------------
@@ -67,7 +67,7 @@ def COSMIC(phiOld, x, u, dt, dx, nt, J):
     return phiOld
 
 
-def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
+def PPM(phiOld, u, nx, dx, dx1,L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # Scheme:  Piecewise Parabolic Method in 1D
@@ -97,7 +97,7 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #---------------------------------------
     # departure point  find
     # --------------------------------------- 
-    x_depart = x - 0.5*dx - u*dt
+    x_depart = x - 0.5*dx - J*u*dt
     while len(np.where(np.logical_or(x_depart < x[0], x_depart > x[-1]))[0]) > 0:
         x_depart = np.where(x_depart < x[0], x_depart + L, x_depart)
         x_depart = np.where(x_depart > x[-1], x_depart - L, x_depart)
@@ -126,36 +126,27 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
 
     #---------------------------------------
     # phi increment as in PPM paper
-    # ---------------------------------------  
-    dx = np.append(dx, [dx[1]])
-    dmq[1:-1] = (dx[1:-1]/(dx[0:-2] + dx[1:-1] +
-            dx[2:]))*(((2*dx[0:-2] + dx[1:-1]) / (dx[2:] + dx[1:-1]) )*(phiOld[2:] -
-                phiOld[1:-1] ) + ( (2*dx[2:] + dx[1:-1]) / (dx[:-2] + dx[1:-1]) )* 
-                    (phiOld[1:-1] - phiOld[0:-2]))
-    dmq[0] = dmq[-2]
-    dmq[-1] = dmq[1]
-    #-------------pppppp
+    #---------------------------------------
+    dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
+    #-------------------------------------------------------
+    # periodic boundary value updates
+    #-------------------------------------------------------
+    dmphi[0] = dmphi[-2]
+    dmphi[-1] = dmphi[1]    
+
+    #--------------
     # no limiters
-    #-------------
+    #--------------
     eta[:] = 0
 
-    #-------------------------
+    #------------------------------------------------------------
     # phi at j-1/2 and j+1/2
-    #-------------------------
+    #------------------------------------------------------------
+    phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[1:])+(phiOld[:-1] + 0.5*dmphi[:-1])*eta[1:]
+    phi_l[0] = phi_l[-2] # boundary updates
 
-    phi_r[1:-2] = phiOld[1:-2] + (dx[1:-2]/(dx[1:-2] + dx[2:-1]))*(phiOld[2:-1]- phiOld[1:-2])+(1/(dx[:-3] + dx[1:-2] + dx[2:-1] + dx[3:]))*((2*dx[2:-1]*dx[1:-2]/(dx[1:-2] + dx[2:-1]))*
-                ( (dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) - (dx[3:] + dx[2:-1])/(2*dx[2:-1] + dx[1:-2]) )*(phiOld[2:-1] - phiOld[1:-2])- 
-                    dx[1:-2]*dmq[2:-1]*(dx[:-3] + dx[1:-2])/(2*dx[1:-2] + dx[2:-1]) + 
-                      dx[2:-1]*dmq[1:-2]*(dx[2:-1] + dx[3:])/(dx[1:-2] + 2*dx[2:-1]))
-    phi_r[0] = phiOld[0] + (dx[0]/(dx[0] + dx[1]))*(phiOld[1]- phiOld[0]) + (1/(dx[-3] + dx[0] + dx[1] + dx[2]))*((2*dx[1]*dx[0]/(dx[0] + dx[1]))* 
-             ( (dx[-3] + dx[0])/(2*dx[0] + dx[1]) - (dx[2] + dx[1])/(2*dx[1] + dx[0]) )*(phiOld[1] - phiOld[0])- 
-                dx[0]*dmq[1]*(dx[-3] + dx[0])/(2*dx[0] + dx[1]) + 
-                  dx[1]*dmq[0]*(dx[1] + dx[2])/(dx[0] + 2*dx[1]))
-    phi_r[-1] = phi_r[1]
-    phi_r[-2] = phi_r[0]
-
-    phi_l[1:] = phi_r[0:-1]
-    phi_l[0] = phi_r[-3]
+    phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)*(1-eta[:-1])+(phiOld[1:] - 0.5*dmphi[1:])*eta[:-1]
+    phi_r[-1] =phi_r[1] # boundary updates
     #--------------------------------------------
     # piecewise parabolic subcell reconstruction
     #--------------------------------------------
@@ -179,9 +170,9 @@ def PPM(phiOld, u, nx, dx, L, x, dt, epsilon = 0.01, eta1=20, eta2 = 0.05):
     #-----------------
     # cumulative mass 
     #-----------------   
-    mass[0] = phiOld[0]*dx[0]
+    mass[0] = phiOld[0]*dx
     for j in xrange(1,nx):
-        mass[j] = mass[j-1] +phiOld[j]*dx[j]
+        mass[j] = mass[j-1] +phiOld[j]*dx
     # mass[-1] = mass[-2] + mass[0]
     return phi_mid[:-1],mass, idx, phi_r[:-1]
 
