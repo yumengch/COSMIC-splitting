@@ -41,40 +41,13 @@ def solid(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     #-----------------------
     # Basic grid information
     #-----------------------
-    dy,dx = Ly/ny,Lx/(nx-1)
+    dy,dx = Ly/ny,Lx/nx
 
-    X,Y1 = np.meshgrid(x,y[:-1])
     ymax = y[-1]
-
-    #----------------------------------------------
-    # initial tracer position and angular velocity
-    #----------------------------------------------
-    A= np.pi*5/3/1000.
-    r = 2500.
-    theta0 = np.pi/2.
-    x0 = 0.5*nx*dx+r*np.cos(theta0)
-    y0 = 0.5*ny*dy+ r*np.sin(theta0)
-
-    #-----------------------------
-    # initial tracer distribution
-    #-----------------------------
-
-    if mesh == 'quad':
-        Y = comput_SB(X+0.5*dx,Y1+0.5*dy,ymax,f_quad(X+0.5*dx,Lx), Ly)
-        
-
-        # J= np.where(Y1>0.5*Ly, 0.5*Ly/(Ly-f_quad(x,Lx)),0.5*Ly/f_quad(x,Lx))
-    elif mesh == 'V':
-        Y = comput_SB(X+0.5*dx,Y1+0.5*dy,ymax,f_V(X+0.5*dx,Lx), Ly)
-        J= np.where(Y1>0.5*Ly, 0.5*Ly/(Ly-f_V(X,Lx)),0.5*Ly/f_V(X,Lx))
-    else:
-        Y = Y1
-        J = np.ones_like(X)
-    # tracer distribution:
-    phi = np.exp(- 0.5*(((X+0.5*dx-x0)/500)**2 + ((Y-y0)/500)**2))
-
+    A = np.pi*5/3000
 
     X,Y1 = np.meshgrid(x,y)
+
     #-----------------------------
     # streamfunction field
     #-----------------------------
@@ -90,43 +63,40 @@ def solid(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change):
     psi = A*r**2
     psi[:,-1] = psi[:,0]
 
-
     #-----------------------------
     # dX and dY in physical domain
     #-----------------------------
-    X,Y1 = np.meshgrid(x,y[:-1])
-    dX = np.zeros_like(phi)
-    dY = np.zeros_like(phi) 
-    dX[:,:-1] = X[:, 1:] - X[:, :-1]
-    dX[:,-1] = dX[:,0]
+    dX = np.zeros([ny+1,nx])
+    dY = np.zeros([ny,nx+1])
+    J =  np.zeros([ny+1, nx+1])
     dY = Y_psi[1:, :] - Y_psi[:-1, :]
 
+    dX = X[:,1:] - X[:,:-1]
+
+    J[:-1, :] = dy/dY
+    J[-1, :] = J[0,:]
     #-----------------------------
     # Courant number and velocity
     #-----------------------------
-    u = np.zeros_like(phi)
-    v = np.zeros_like(phi)    
-    U = np.zeros_like(phi)
-    V = np.zeros_like(phi)
+    u = np.zeros([ny, nx+1])
+    v = np.zeros([ny+1, nx])  
+    U = np.zeros([ny, nx+1])
+    V = np.zeros([ny+1, nx])
 
     #-----------------------------
     # velocity in physical domain
     #-----------------------------
     u = -(psi[1:,:]-psi[:-1,:])/dY
-    v[:,:-1] =  (psi[:-1,1:]-psi[:-1,:-1])/dX[:,:-1]
-    v[:,-1] = v[:,0]
-    u[:,-1] = u[:,0]
+    v =  (psi[:,1:]-psi[:,:-1])/dX
+  
 
     #-----------------------------
     # Courant number in computational domain
     #-----------------------------
     U = -(psi[1:,:]-psi[:-1,:])/dy
-    V[:,:-1] =  (psi[:-1,1:]-psi[:-1,:-1])/dx
-    v[:,-1] = v[:,0]
-    u[:,-1] = u[:,0]
-
+    V =  (psi[:,1:]-psi[:,:-1])/dx
 
     cx = U*dt/dx
     cy = V*dt/dy
 
-    return phi, cx, cy, u, v, X, Y_psi, J
+    return cx, cy, u, v, X, Y_psi, J

@@ -19,62 +19,69 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     # spatial points for plotting and for defining initial conditions
     x = np.linspace(xmin, xmax, nx+1)
     def f(x):
-        return -0.4
+        return 0.5
     def comput(x,L):
         #-------------------------------------
         # unequidistant computational domain 
         #-------------------------------------
         fx = f(x)
-        # return np.where(x>0.5*L, fx+(x-0.5*L)*(L-fx)/(0.5*L),x*fx/(0.5*L))
-        return np.where(x>=0, fx+x*(1-fx/xmax),fx+x*(1-fx/xmin))
+        return np.where(x>0.5*L, fx+(x-0.5*L)*(L-fx)/(0.5*L),x*fx/(0.5*L))
+        # return np.where(x>=0, fx+x*(1-fx/xmax),fx+x*(1-fx/xmin))
 
     L = xmax - xmin
 
     #----------------------
     # computational domain 
     #----------------------
-    x1 = comput(x, L)
-    J = np.where(x>0.5*L, 2*(L-f(x))/L,2*f(x)/L)
+    # x = np.linspace(xmin, xmax, nx+1)
+    # x1 = comput(x, L)
+    # J = np.where(x>0.5*L, 2*(L-f(x))/L,2*f(x)/L)
     # print J
-    y = pl.linspace(xmin, xmax, nx+1)
-   
+    
+    # dx = (xmax - xmin)/nx
     # print x1
-    # x1 = x
-
-    dx1 = np.zeros([nx+1])
+    # x1 = comput(x,L)
+    # u = np.zeros(nx+1)
+    x1 = np.zeros([nx+1])
+    x1[0] = 0.
+    x1[1] = 0.25
+    x1[2] = 0.5
+    x1[3] = 1.
+    u = 0.8
+    dx1 = np.zeros([nx])
     # J = np.zeros_like(dx)
-    dx1[1:-1] = 0.5*(x1[2:] - x1[1:-1]) + 0.5*(x1[1:-1] - x1[:-2])
-    dx1[0] = 0.5*(x1[1] - x1[0]) + 0.5*(x1[-1] - x1[-2])
-    dx1[-1] = dx1[0]
-    dx = (xmax - xmin)/nx
+    dx1 = (x1[1:] - x1[:-1])
+    # print dx1, dx
+    # dx1[-1] = dx1[0]
+    # c = u*dt/dx
+    # J = dx/dx1
     # initial conditions
-    u = np.zeros(nx+1)
-    u[:] = 2.337								# velocity (u) change at this line!!!!
+								# velocity (u) change at this line!!!!
 
-    print "Courant number:", np.max(u*dt/dx)
+    # print "Courant number:", np.max(u*dt/dx)
     # print np.max(J[1:]*u[1:] - J[:-1]*u[:-1]) 
-    phiOld= initialProfile(x)
+    # phiOld= initialProfile(x)
 
-    # analytical solution
-    distanceTravelled = u*dt*nt
-    # print distanceTravelled
-    phiExact = initialProfile((x1 - distanceTravelled)%(xmax - xmin))
+    # # analytical solution
+    # distanceTravelled = u*dt*nt
+    # # print distanceTravelled
+    # phiExact = initialProfile((x1 - distanceTravelled)%(xmax - xmin))
 
     # 1D PPM
-    phi = COSMIC(J*phiOld.copy(), x, u, dt, dx1, dx, nt,J)
+    phi = COSMIC(u,dt,x1, L)
 
     # # calculate the error norms 
-    errors = errorNorms(phi.copy(), phiExact)
-    print errors
+    # errors = errorNorms(phi.copy(), phiExact)
+    # print errors
 
-    # # # plot the results in comparison to analytic
-    plt.figure(1)
-    plt.clf()
-    plt.plot(x1,phi)
-    plt.plot(x1,phiExact, 'r')
+    # # # # plot the results in comparison to analytic
+    # plt.figure(1)
+    # plt.clf()
+    # plt.plot(x1,phi)
+    # plt.plot(x1,phiExact, 'r')
 
-    plt.ylim(-0.1, 1.1)
-    plt.show()
+    # plt.ylim(-0.1, 1.1)
+    # plt.show()
 
 
-advection(initialProfile=cosBell, xmin = -1., xmax = 1., nx = 100, nt = 200,  dt = 5)
+advection(initialProfile=cosBell, xmin = 0., xmax = 1., nx = 3, nt = 1,  dt = 1)
