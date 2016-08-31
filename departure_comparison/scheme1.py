@@ -5,7 +5,7 @@ def COSMIC(cx, cy, dx, dy, xmin, ymin, u, v, X, Y, dt, nt, J):
     #-----------------------
     # Basic grid information
     #-----------------------
-    nx, ny = len(u[0,:-1]), len(u[:,0])
+    nx, ny = len(u[0,:]), len(u[:,0])
     xmax,ymax = xmin + nx*dx,ymin+ny*dy
 
     Lx, Ly= xmax-xmin,ymax-ymin
@@ -25,9 +25,9 @@ def COSMIC(cx, cy, dx, dy, xmin, ymin, u, v, X, Y, dt, nt, J):
         #--------------------------
 
         for i in xrange(nx):
-            y_depart_phys[:,i],y_depart_compt[:,i] = departure(y[:,i], Y[:,i], v[:,i], dt, cy[:,i], J[:,i], Ly, dy)
+            y_depart_phys[:-1,i],y_depart_compt[:-1,i] = departure(y[:-1,i], Y[:-1,i], v[:,i], dt, cy[:,i], J[:-1,i], Ly, dy)
         for j in xrange(ny):
-            x_depart_phys[j,:],x_depart_compt[j,:] = departure(x[j,:], X[j,:], u[j,:], dt, cx[j,:], J[j,:], Lx, dx)
+            x_depart_phys[j,:-1],x_depart_compt[j,:-1] = departure(x[j,:-1], X[j,:-1], u[j,:], dt, cx[j,:], J[j,:-1], Lx, dx)
         
         #----------------------
         # transform computational departure points to physical domain
@@ -36,9 +36,12 @@ def COSMIC(cx, cy, dx, dy, xmin, ymin, u, v, X, Y, dt, nt, J):
 
         
         error = y_depart_phys - Y_depart
-        for j in xrange(ny):
-            print j, error[50,j]
+        for j in xrange(nx):
+            print j, np.max(error[j,:])
+        # print Y[25,49], y[25,49]
+        # print v[25,49]*dt, cy[25,49]*J[25,49]*dy
     return np.max(error)
+    
 
     
 
@@ -48,17 +51,17 @@ def departure(x, X, u, dt, c, J, L, dx):
     #---------------------------------------
     x_depart_phys = X - u*dt
     for i in xrange(len(x_depart_phys)):
-        while x_depart_phys[i] < 0.:
+        while x_depart_phys[i] <= 0.:
             x_depart_phys[i] += L
-        while x_depart_phys[i] > L:
+        while x_depart_phys[i] >= L:
             x_depart_phys[i] -= L
 
     x_depart_compt = x - J*c*dx
     
     for i in xrange(len(x_depart_compt)):
-        while x_depart_compt[i] < 0.:
+        while x_depart_compt[i] <= 0.:
             x_depart_compt[i] += L
-        while x_depart_compt[i] > L:
+        while x_depart_compt[i] >= L:
             x_depart_compt[i] -= L
  
     return x_depart_phys, x_depart_compt
@@ -72,8 +75,8 @@ def f_quad(x,Lx, Ly):
 
 def comput_SB(X, Y, ymax, fx, Ly):
 
-    return np.where(Y>0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
-
+    return np.where(Y>=0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
+    # return fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly)
 def f_V(x,Lx, Ly):
     #-------------------------
     # V shape mesh function

@@ -1,45 +1,32 @@
-def solid(x_edge, y_edge, x_cnter, y_cnter, t, nt, dt, mesh, change):
+#---------------------------------------------------------------------------------
+# Author: Yumeng Chen
+# Initial conditions to test COSMIC splitting with solid body rotation test case,
+# horizontal advection over orography test case and deformational flow test case.
+# cx, cy is the Courant number in x- and y- direction
+# mesh: 'orthogo' means orthogonal grids (defaulted in solid body rotation and 
+#       deformational flow test case),
+#       'quad', 'V' is used in solid body rotation test case for quadratic mesh 
+#        and V shape mesh
+#       'high' and 'low' means h0 = 6km and 3km as orography respectively 
+#       'W' means W shape mesh in deformational flow test case
+# J is the Jacobian for coordinate transformation
+#---------------------------------------------------------------------------------
+def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
 #---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # function: solid body rotation test case with angular velocity of 2A 
 # and Gaussian distribution
 #---------------------------------------------------------------------------------
-    def f_quad(x,Lx):
-        #-------------------------
-        # quadratic mesh function
-        #-------------------------
-        return 2*(x-0.5*Lx)**2/Lx/np.sqrt(3) + 0.5*Ly-0.5*0.25*Lx/np.sqrt(3)
-    def f_V(x,Lx):
-        #-------------------------
-        # V shape mesh function
-        #-------------------------
-        return np.where(x<=0.5*Lx,
-                        (-1/np.sqrt(3))*x+Lx/4./np.sqrt(3)+0.5*Lx,
-                        np.where(x>0.5*Lx,
-                        1/np.sqrt(3)*(x-0.5*Lx)-Lx/4./np.sqrt(3)+0.5*Lx,0))
 
-    def compt_to_phys_SB(Y, Ly, fx):
-        #-------------------------------------
-        # non-orthogonal computational domain 
-        # for solid body rotation test case
-        #-------------------------------------
-        return np.where(Y>0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
-
-    def phys_to_compt_SB(Y, Ly, fx):
-        #-------------------------------------
-        # non-orthogonal computational domain 
-        # for solid body rotation test case
-        #-------------------------------------
-        return np.where(Y>0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
     
     #-----------------------
     # Basic grid information
     #-----------------------
     Lx, Ly = np.max(x_edge) - np.min(x_edge),np.max(y_edge) - np.min(y_edge)
-    nx, ny = len(x_cnter), len(y_cnter)
+    nx, ny = len(x_cntr), len(y_cntr)
     dx, dy = Lx/nx, Ly/ny
     X_edge , Y_edge   = np.meshgrid(x_edge,y_edge)
-    X_cnter, Y_cnter  = np.meshgrid(x_cnter,y_cnter)
+    X_cntr, Y_cntr  = np.meshgrid(x_cntr,y_cntr)
     ymax = np.max(y_edge)
 
     #----------------------------------------------
@@ -55,14 +42,14 @@ def solid(x_edge, y_edge, x_cnter, y_cnter, t, nt, dt, mesh, change):
     # initial tracer distribution
     #-----------------------------
     if mesh == 'quad':
-        Y_C = compt_to_phys_SB(Y_cnter, Ly, f_quad(X_cnter,Lx))
+        Y_C = compt_to_phys_SB(Y_cntr, Ly, f_quad(X_cntr,Lx, Ly))
     elif mesh == 'V':
-        Y_C = compt_to_phys_SB(Y_cnter, Ly, f_V(X_cnter,Lx))
+        Y_C = compt_to_phys_SB(Y_cntr, Ly, f_V(X_cntr,Lx, Ly))
     else:
-        Y_C = Y_cnter
+        Y_C = Y_cntr
 
     # tracer distribution:
-    phi = np.exp(- 0.5*(((X_cnter-x0)/500)**2 + ((Y_C-y0)/500)**2))
+    phi = np.exp(- 0.5*(((X_cntr-x0)/500)**2 + ((Y_C-y0)/500)**2))
 
     #---------------------
     # Analytical solution 
@@ -72,19 +59,19 @@ def solid(x_edge, y_edge, x_cnter, y_cnter, t, nt, dt, mesh, change):
     for i in xrange(len(it)):
         x0 = 0.5*Lx + r*np.cos(theta0+2*A*it[i]*dt)
         y0 = 0.5*Ly + r*np.sin(theta0+2*A*it[i]*dt)
-        phiExact[i] = np.exp(- 0.5*(((X_cnter - x0)/(500))**2 + ((Y_C - y0)/(500))**2))
+        phiExact[i] = np.exp(- 0.5*(((X_cntr - x0)/(500))**2 + ((Y_C - y0)/(500))**2))
 
     #----------------------
     # streamfunction field
     #----------------------
     if mesh == 'quad':
-        Y = compt_to_phys_SB(Y_edge, Ly, f_quad(X_edge,Lx))
+        Y = compt_to_phys_SB(Y_edge, Ly, f_quad(X_edge,Lx, Ly))
     elif mesh == 'V':
-        Y = compt_to_phys_SB(Y_edge, Ly, f_V(X_edge,Lx))
+        Y = compt_to_phys_SB(Y_edge, Ly, f_V(X_edge,Lx, Ly))
     else:
         Y = Y_edge
     # streamfunction definition    
-    r = np.sqrt((X_edge)**2+(Y)**2)
+    r = np.sqrt((X_edge - 0.5*Lx)**2+(Y - 0.5*Ly)**2)
     psi = A*r**2
 
 
@@ -93,18 +80,15 @@ def solid(x_edge, y_edge, x_cnter, y_cnter, t, nt, dt, mesh, change):
     #-----------------------------
     dX = np.zeros([ny,nx])
     dY = np.zeros([ny,nx])
-    dY_J = np.zeros([ny+1,nx+1])
-    J =  np.zeros([ny+1, nx+1])
+    dY_J = np.zeros([ny,nx])
+    J =  np.zeros([ny, nx])
     
     dY = Y[1:, :-1] - Y[:-1, :-1]
-
     dX = X_edge[:-1, 1:] - X_edge[:-1, :-1]
-    # dY_J[1:-1, :-1] = Y_C[1:, :] - Y_C[:-1, :]
-    # dY_J[-1, :-1] = dY_J[0, :-1]  = 0.5*(dY[0,:] + dY[-1,:])
-    # dY_J[:, -1] = dY_J[:,0] 
-    J[:-1,:-1] = dy/dY
-    # J[-1, :] = J[0, :]
-    # J[:,-1] = J[:,0]
+    dY_J[1:, :] = Y_C[1:, :] - Y_C[:-1, :]
+    dY_J[0, :]  = 0.5*(dY[0, :] + dY[-1, :]) 
+    J = dy/dY
+
 
     #-----------------------------
     # Courant number and velocity
@@ -126,8 +110,11 @@ def solid(x_edge, y_edge, x_cnter, y_cnter, t, nt, dt, mesh, change):
     #-----------------------------
     U = -(psi[1:,:-1]-psi[:-1,:-1])/dy
     V =  (psi[:-1,1:]-psi[:-1,:-1])/dx
-
+    # plt.figure(1)
+    # plt.clf()
+    # plt.quiver(X_cntr,Y_C,U,V)
+    # plt.show()
     cx = U*dt/dx
     cy = V*dt/dy
 
-    return cx, cy, u, v, X_edge, Y, J
+    return phi, phiExact, cx, cy, u, v, X_cntr, X_edge[:-1,:-1], Y_edge[:-1,:-1], Y[:-1,:-1], J, Y_C

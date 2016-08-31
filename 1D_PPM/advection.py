@@ -15,73 +15,40 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     "Diffuse between x = xmin and x = xmax split over 40 spatial steps"
     "with diffusion coeffient K, time step dt for nt time steps"
 
-
     # spatial points for plotting and for defining initial conditions
-    x = np.linspace(xmin, xmax, nx+1)
-    def f(x):
-        return 0.5
-    def comput(x,L):
-        #-------------------------------------
-        # unequidistant computational domain 
-        #-------------------------------------
-        fx = f(x)
-        return np.where(x>0.5*L, fx+(x-0.5*L)*(L-fx)/(0.5*L),x*fx/(0.5*L))
-        # return np.where(x>=0, fx+x*(1-fx/xmax),fx+x*(1-fx/xmin))
-
     L = xmax - xmin
+    dx = L/nx
+    x_edge = np.linspace(xmin, xmax, nx+1)
+    x_cntr = x_edge[:-1] + 0.5*dx
 
-    #----------------------
-    # computational domain 
-    #----------------------
-    # x = np.linspace(xmin, xmax, nx+1)
-    # x1 = comput(x, L)
-    # J = np.where(x>0.5*L, 2*(L-f(x))/L,2*f(x)/L)
-    # print J
-    
-    # dx = (xmax - xmin)/nx
-    # print x1
-    # x1 = comput(x,L)
-    # u = np.zeros(nx+1)
-    x1 = np.zeros([nx+1])
-    x1[0] = 0.
-    x1[1] = 0.25
-    x1[2] = 0.5
-    x1[3] = 1.
-    u = 0.8
-    dx1 = np.zeros([nx])
-    # J = np.zeros_like(dx)
-    dx1 = (x1[1:] - x1[:-1])
-    # print dx1, dx
-    # dx1[-1] = dx1[0]
-    # c = u*dt/dx
-    # J = dx/dx1
     # initial conditions
-								# velocity (u) change at this line!!!!
-
+    u = np.zeros_like(x_cntr)
+    u[:] = 2.1
+    c = u*dt/dx
     # print "Courant number:", np.max(u*dt/dx)
     # print np.max(J[1:]*u[1:] - J[:-1]*u[:-1]) 
-    # phiOld= initialProfile(x)
+    phiOld= initialProfile(x_cntr)
 
     # # analytical solution
-    # distanceTravelled = u*dt*nt
+    distanceTravelled = u*dt*nt
     # # print distanceTravelled
-    # phiExact = initialProfile((x1 - distanceTravelled)%(xmax - xmin))
+    phiExact = initialProfile((x_cntr - distanceTravelled)%(xmax - xmin))
 
     # 1D PPM
-    phi = COSMIC(u,dt,x1, L)
+    phi = COSMIC(phiOld, c, u, x_cntr, x_edge[:-1], dt, nt)
 
     # # calculate the error norms 
     # errors = errorNorms(phi.copy(), phiExact)
     # print errors
 
     # # # # plot the results in comparison to analytic
-    # plt.figure(1)
-    # plt.clf()
-    # plt.plot(x1,phi)
-    # plt.plot(x1,phiExact, 'r')
+    plt.figure(1)
+    plt.clf()
+    plt.plot(x_cntr,phi)
+    plt.plot(x_cntr,phiExact, 'r')
 
-    # plt.ylim(-0.1, 1.1)
-    # plt.show()
+    plt.ylim(-0.1, 1.1)
+    plt.show()
 
 
-advection(initialProfile=cosBell, xmin = 0., xmax = 1., nx = 3, nt = 1,  dt = 1)
+advection(initialProfile=cosBell, xmin = 0., xmax = 1., nx = 100, nt = 100,  dt = 0.05)

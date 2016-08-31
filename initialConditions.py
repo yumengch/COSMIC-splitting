@@ -1,5 +1,5 @@
     
-    #---------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
 # Author: Yumeng Chen
 # Initial conditions to test COSMIC splitting with solid body rotation test case,
 # horizontal advection over orography test case and deformational flow test case.

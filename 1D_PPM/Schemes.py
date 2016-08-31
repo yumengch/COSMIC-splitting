@@ -1,78 +1,265 @@
 import numpy as np
-def COSMIC(u, dt, x1,L):
-
+def COSMIC(phiOld, c, u, X_cntr, X_edge, dt, nt):
+#---------------------------------------------------------------------------------
+# Author: Yumeng Chen
+# Scheme: COSMIC splitting
+# Basis: Leonard, B. P., A. P. Lock, and M. K. MacVean, 1996: Conservative explicit 
+#           unrestricted-time-step multidimensional constancy-preserving advection schemes. 
+# Input: phiOld
+# Output: phi at time nt*dt
+#---------------------------------------------------------------------------------
 
     #-----------------------
     # Basic grid information
     #-----------------------
-    # nx = len(phiOld)
-    # xmax = xmin + (nx-1)*dx
-    # print xmax
-    # Lx = xmax-xmin
-    # x = np.linspace(xmin,xmax,nx)
+    nx = len(phiOld)
+    xmin = np.min(X_edge)
+    dx = X_edge[1] - X_edge[0]
+    xmax = xmin + nx*dx
+    Lx = xmax - xmin
+
+    #-----------------------------------------------
+    # midpoint values and mass flux at cell boundary
+    #-----------------------------------------------
+    phi_mid= np.zeros_like(phiOld)
+    mass = np.zeros([nx])
+
+    #---------------------------------
+    # XA, YA advective-form operator 
+    # XC, YC conservative-form operator
+    # X,Y denote direction,
+    # A,C means advective/conservative 
+    #---------------------------------
+    XA = np.zeros_like(phiOld)
+
+    XC = np.zeros_like(phiOld)
+
+    idx_x = np.zeros_like(phiOld).astype(int)
+
+    r_x = np.zeros_like(phiOld)
+
+    #-------------------------------------------------------
+    # phi_AX, phi_AY:inner operator (advective-form) update
+    # XC_AY, YC_AX: cross term operator updates
+    #-------------------------------------------------------
+    phi_AX = np.zeros_like(phiOld)
+
+    XC_AY = np.zeros_like(phiOld)
+
 
     #--------------------------------
     #the updated cell-average values
     #--------------------------------
-    # phi = np.zeros_like(phiOld)
+    phi = np.zeros_like(phiOld)
 
-    # x_depart_phys = np.zeros_like(phiOld)
 
-    # x_depart_compt = np.zeros_like(phiOld)
-    # for t in xrange(int(nt)):
-        #----------------------
-        # departure point calculation
-        #--------------------------
+    #---------------
+    # time updates
+    #---------------
+    for t in xrange(int(nt)):
+        #---------------------------
+        # find the departure points
+        #---------------------------
+        idx_x, r_x = departure_x(X_edge, xmin, xmax, u, dx, dt, Lx)
 
-        # for i in xrange(nx):
-        #     y_depart_phys[:,i],y_depart_compt[:,i] = departure(y[:-1,i], Y[:-1,i], v[:,i], dt, cy[:,i], J[:,i], Ly, dy)
-        # for j in xrange(ny):
-    x_depart_phys = departure(u, dt, x1, L)
+        #----------------------------------------------------------
+        # advective operator and non-cross term conservative operator 
+        # updates in x direction
+        #----------------------------------------------------------
+        #------------------
+        # 1D PPM updates
+        #------------------
+        phi_mid, mass= PPM(phiOld, c, nx, dx, idx_x, r_x)
+        #--------------------------------------
+        # mass flux at each cell boundary
+        #--------------------------------------
+        OUT = flux(nx, dx, c, phi_mid, mass, idx_x, r_x)
+        #----------------------------------------------
+        #  adavective and conservative operator updates
+        #----------------------------------------------    
+        XC = conservative(nx, c, OUT)
+        # XA = advective(nx, c, OUT)
+
+
+
+        #-------------------------------------------------------
+        # Final COSMIC splitting updates
+        #------------------------------------------------------- 
+        phi = phiOld+XC
+
+        phiOld = phi.copy() #update the time step
+
+        #----------------------------------------
+        # print the time steps and maximum value
+        #----------------------------------------
+        print 'at ', t,' time step, the maximum of phi is ', np.max(phiOld)
+
+    return phi
+
+
+def departure_x(X, xmin, xmax, u, dx, dt, L):
+    r = np.zeros_like(u)
+    x_depart = X - u*dt
+
+    for i in xrange(len(x_depart)):
+        while x_depart[i] <= xmin:
+            x_depart[i] += L
+        while x_depart[i] >= xmax:
+            x_depart[i] -= L
+
+    idx = np.floor((x_depart - xmin)/dx).astype(int)
     
-    #----------------------
-    # transform computational departure points to physical domain
-    #--------------------------
-    # Y_depart = comput_SB(X,y_depart_compt,ymax,f_quad(X,Lx, Ly), Ly)
-
-    print x_depart_phys
-        # error = x_depart_phys - X_depart
-        # for i in xrange(nx):
-        #     print i, np.max(error[:,i])
-    return x_depart_phys
-
+    X = np.append(X, xmax)
+    for i in xrange(len(X)-1):
+        if u[i]>0:
+            r[i] = (X[idx[i]+1] - x_depart[i])/dx
+        else:
+            r[i] = -(x_depart[i] - X[idx[i]])/dx
+        print idx[i], i
+    return idx, r
     
 
-def departure(u, dt, X, L):
+def PPM(phiOld, c, nx, dx, idx, c_r):
+#---------------------------------------------------------------------------------
+# Author: Yumeng Chen
+# Scheme:  Piecewise Parabolic Method in 1D
+# Basis: Colella, P., and P. R. Woodward, 1984: The Piecewise Parabolic Method PPM 
+#           for gas-dynamical simulations. J. Comput. Phys.,.
+# Input: phiOld
+# Output: phi at time nt+1
+#---------------------------------------------------------------------------------
+
+    #-----------------------
+    # Basic grid information
+    #-----------------------
+    dmphi = np.zeros_like(phiOld)           # phi increment as in PPM paper
+    phi_r = np.zeros_like(phiOld)           # phi at j+1/2 boundary
+    phi_l = np.zeros_like(phiOld)           # phi at j-1/2 
+    phi_6 = np.zeros_like(phiOld)           # the difference between phi,j and average of phi_l and phi_r
+    daj = np.zeros_like(phiOld)             # the difference between the right and left boundary (for limiters)
+    phi_mid = np.zeros_like(phiOld)         # final phi at j+1/2
+    mass = np.zeros(nx)
+    c = np.append(c, c[0])
+    idx = np.append(idx,idx[0])
+    c_r = np.append(c_r, c_r[0])
     #---------------------------------------
-    # Integer and remnant Courant number
+    # phi increment as in PPM paper
     #---------------------------------------
-    print X, u*dt
-    x_depart_phys = X - u*dt
-    for i in xrange(len(x_depart_phys)):
-        while x_depart_phys[i] < X[0]:
-            x_depart_phys[i] = x_depart_phys[i] + L
-        while x_depart_phys[i] > X[-1]:
-            print x_depart_phys[i]
-            x_depart_phys[i] = x_depart_phys[i] - L
+    dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
+    #-------------------------------------------------------
+    # periodic boundary value updates
+    #-------------------------------------------------------
+    dmphi[0] = 0.5*(phiOld[1]-phiOld[-1])
+    dmphi[-1] = 0.5*(phiOld[0]-phiOld[-2]) 
 
 
-    # x_depart_compt = x - J*c*dx
-    
-    # for i in xrange(len(x_depart_compt)):
-    #     while x_depart_compt[i] < 0.:
-    #         x_depart_compt[i] = 0.
-    #     while x_depart_compt[i] > L:
-    #         x_depart_compt[i] = L
- 
-    return x_depart_phys#, x_depart_compt
+
+    #------------------------------------------------------------
+    # phi at j-1/2 and j+1/2
+    #------------------------------------------------------------
+    phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
+    phi_l[0] = (0.5*(phiOld[0]+phiOld[-1]) + (dmphi[-1]-dmphi[0])/6.)
+
+    phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
+    phi_r[-1] = (0.5*(phiOld[0]+phiOld[-1]) + (dmphi[-1]-dmphi[0])/6.)
+
+    #------------------------------------------------------------
+    # piecewise parabolic subcell reconstruction
+    #-----------------------------------------------------------
+    daj = phi_r - phi_l
+    phi_6 = 6*(phiOld-0.5*(phi_l+phi_r))
+
+    #------------------------------------------------------------
+    # PPM update to get phi at j+1/2
+    #-----------------------------------------------------------
+    for i in xrange(nx):
+        # print idx[i+1]
+        if c[i+1]>= 0:
+            phi_mid[i] = phi_r[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]-(1-2*c_r[i+1]/3.)*phi_6[idx[i+1]])
+        else:
+            phi_mid[i] = phi_l[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]+(1+2*c_r[i+1]/3.)*phi_6[idx[i+1]])
+  
+    #-------------------
+    # cumulative mass 
+    #-------------------    
+    mass[0] = phiOld[0]*dx
+    for j in xrange(1,nx):
+        mass[j] = mass[j-1] +phiOld[j]*dx
+
+    return phi_mid, mass
+
+def flux(nx,dx,c,phi_mid,mass, idx, c_r):
+#-----------------------------------------------------
+# function: Flux calculation at j+1/2
+#-----------------------------------------------------
+
+    #---------------------------------------
+    # Flux at j+1/2
+    #---------------------------------------
+    OUT = np.zeros_like(phi_mid)
+    c_r = np.append(c_r, c_r[0])
+    c = np.append(c, c[0])
+    idx = np.append(idx,idx[0])
+    for i in xrange(nx):
+        if c[i+1]>0:          # velocity u > 0
+            if i>idx[i+1]:           # if the departure cell is at the west of predicted cell 
+                OUT[i] = (phi_mid[i]*c_r[i+1]*dx+(mass[i]-mass[idx[i+1]]))/dx
+            elif i==idx[i+1]:        # if the departure cell is at the position of predicted cell
+                OUT[i] = phi_mid[i]*c_r[i+1]*dx/dx
+            else:             # if the departure cell is at the east of predicted cell
+                OUT[i] = (phi_mid[i]*c_r[i+1]*dx+mass[i]+mass[-1]-mass[idx[i+1]])/dx
+        elif c[i+1]<0:  
+            k = np.floor(idx[i+1]-1)%nx      # velocity u < 0
+            if i> k:           # if the departure cell is at the east of predicted cell  
+                OUT[i] = (-phi_mid[i]*c_r[i+1]*dx+mass[-1]-mass[i]+mass[k])/dx
+            elif i ==k:     # if the departure cell is at the position of predicted cell
+                OUT[i] = -phi_mid[i]*c_r[i+1]*dx/dx
+            elif i<k:       # if the departure cell is at the west of predicted cell 
+                OUT[i] = (-phi_mid[i]*c_r[i+1]*dx-mass[i]+mass[k])/dx
+        else:               # if velcity = 0
+            OUT[i] = 0
+    return OUT
+
+def advective(nx,c,OUT):
+#-----------------------------------------------------
+# function: advecitve operator calculation
+#-----------------------------------------------------
+
+    #---------------------------------------
+    # advective operator 
+    #---------------------------------------
+    AX = np.zeros_like(OUT)
+    c = np.append(c, c[0])
+    for i in xrange(nx):
+        #----------------------------------------------------
+        # the if statement is to update by upwind velocity
+        #----------------------------------------------------
+        if c[i] >= 0 and c[i+1] >0:
+            AX[i] = OUT[i-1]-c[i]*OUT[i]/c[i+1]
+        elif c[i] < 0 and c[i+1] <= 0 :
+            AX[i] = OUT[i]-c[i+1]*(OUT[i-1]/c[i])
+        else:
+            AX[i] = 0
+    return AX[:]
+
+def conservative(nx,c,OUT):
+#-----------------------------------------------------
+# function: conservative operator calculation
+#-----------------------------------------------------
+    XC = np.zeros_like(OUT)
+    c = np.append(c, c[0])
+    #-----------------------------------------------------
+    # update by influx - outflux in each cell
+    #-----------------------------------------------------
+    for i in xrange(nx):
+        if c[i+1]<=0 and c[i]<=0:
+            XC[i] = (OUT[i]-OUT[i-1])
+        elif c[i+1]>=0 and c[i]>=0:
+            XC[i] = (OUT[i-1]-OUT[i])
+        elif c[i+1]>=0 and c[i]<=0:
+            XC[i] = -(OUT[i]+OUT[i-1])
+        elif c[i+1]<=0 and c[i]>=0:
+            XC[i] = (OUT[i]+OUT[i-1])
+    return XC[:]
 
 
-def f(x):
-    return -0.4
-def comput(x,L):
-    #-------------------------------------
-    # unequidistant computational domain 
-    #-------------------------------------
-    fx = f(x)
-    # return np.where(x>0.5*L, fx+(x-0.5*L)*(L-fx)/(0.5*L),x*fx/(0.5*L))
-    return np.where(x>=0, fx+x*(1-fx/xmax),fx+x*(1-fx/xmin))
