@@ -82,13 +82,13 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     dY = np.zeros([ny,nx])
     dY_J = np.zeros([ny,nx])
     J =  np.zeros([ny, nx])
-    
+    J_p =  np.zeros([ny, nx])
     dY = Y[1:, :-1] - Y[:-1, :-1]
     dX = X_edge[:-1, 1:] - X_edge[:-1, :-1]
     dY_J[1:, :] = Y_C[1:, :] - Y_C[:-1, :]
-    dY_J[0, :]  = 0.5*(dY[0, :] + dY[-1, :]) 
+    dY_J[0, :]  = Y_C[0, :] + dY_J[-1, :]
     J = dy/dY
-
+    J_p = dy/dY_J
 
     #-----------------------------
     # Courant number and velocity
@@ -117,4 +117,4 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     cx = U*dt/dx
     cy = V*dt/dy
 
-    return phi, phiExact, cx, cy, u, v, X_cntr, X_edge[:-1,:-1], Y_edge[:-1,:-1], Y[:-1,:-1], J, Y_C
+    return phi, phiExact, cx, cy, u, v, X_cntr, X_edge[:-1,:-1], Y_edge[:-1,:-1], Y[:-1,:-1], J, Y_C, J_p

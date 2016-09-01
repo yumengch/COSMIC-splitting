@@ -54,7 +54,14 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     #--------------------------------
     phi = np.zeros_like(phiOld)
 
-
+    
+    #---------------------------
+    # find the departure points
+    #---------------------------
+    for j in xrange(ny):
+        idx_x[j,:], r_x[j,:] = departure_x(X_edge[j,:], xmin, xmax, u[j,:], dx, dt, Lx)
+    for i in xrange(nx):
+        idx_y[:,i], r_y[:,i] = departure_y(X_cntr[:,i], X_edge[:,i], Y_edge[:,i], Y[:,i], ymin, ymax, v[:,i], dy, dt, Lx, Ly, mesh)
     #---------------
     # time updates
     #---------------
@@ -65,14 +72,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         if change:
             cx, cy = initialProfile(x, y, xmin, ymin, nx, ny, Lx, Ly ,t, nt, dt, mesh, change)
 
-        #---------------------------
-        # find the departure points
-        #---------------------------
-        for j in xrange(ny):
-            idx_x[j,:], r_x[j,:] = departure_x(X_edge[j,:], xmin, xmax, u[j,:], dx, dt, Lx)
-        for i in xrange(nx):
-            idx_y[:,i], r_y[:,i] = departure_y(X_cntr[:,i], X_edge[:,i], Y_edge[:,i], Y[:,i], ymin, ymax, v[:,i], dy, dt, Lx, Ly, mesh)
-        # print np.max(r_y)
+
         #-------------------------------------------------------------
         # advective operator and non-cross term conservative operator 
         # updates in y direction
@@ -80,19 +80,19 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         for i in xrange(nx):
             #------------------
             # 1D PPM updates
-            #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phiOld[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
+            #-----------------
+            phi_mid[:,i],mass[:,i] = PPM((1/J_p[:,i])*phiOld[:,i],J_p[:,i]*cy[:,i],ny,dy, idx_y[:,i], J_p[:,i]*r_y[:,i])
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
-            OUT = flux(ny,dy,cy[:,i],phi_mid[:,i],mass[:,i], idx_y[:,i], r_y[:,i])
+            OUT = flux(ny,dy,J_p[:,i]*cy[:,i],phi_mid[:,i],mass[:,i], idx_y[:,i], J_p[:,i]*r_y[:,i])
             #----------------------------------------------
             #  adavective and conservative operator updates
             #----------------------------------------------
-            YC[:,i] = conservative(ny,cy[:,i],OUT)
+            YC[:,i] = conservative(ny,J_p[:,i]*cy[:,i],OUT)
+            YA[:,i] = conservative(ny,J_p[:,i]*cy[:,i],OUT)
 
-            YA[:,i] = conservative(ny,cy[:,i],OUT)
- 
+
         #----------------------------------------------------------
         # advective operator and non-cross term conservative operator 
         # updates in x direction
@@ -101,23 +101,22 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phiOld[j,:],cx[j,:],nx,dx, idx_x[j,:], r_x[j,:])
+            phi_mid[j,:], mass[j,:]= PPM((1/J_p[j,:])*phiOld[j,:],J_p[j,:]*cx[j,:],nx,dx, idx_x[j,:], J_p[j,:]*r_x[j,:])
             #--------------------------------------
             # mass flux at each cell boundary
             #--------------------------------------
-            OUT = flux(nx,dx,cx[j,:],phi_mid[j,:],mass[j,:], idx_x[j,:], r_x[j,:])
+            OUT = flux(nx,dx,J_p[j,:]*cx[j,:],phi_mid[j,:],mass[j,:], idx_x[j,:], J_p[j,:]*r_x[j,:])
             #----------------------------------------------
             #  adavective and conservative operator updates
             #----------------------------------------------    
-            XC[j,:] = conservative(nx,cx[j,:],OUT)
-            XA[j,:] = conservative(nx,cx[j,:],OUT)
-        
+            XC[j,:] = conservative(nx,J_p[j,:]*cx[j,:],OUT)
+            XA[j,:] = conservative(nx,J_p[j,:]*cx[j,:],OUT)
 
         #---------------------------------------------------------
         # advective operator updates
         #---------------------------------------------------------    
-        phi_AX = phiOld + J*XA
-        phi_AY = phiOld + J*YA
+        phi_AX = phiOld + J_p*XA
+        phi_AY = phiOld + J_p*YA
         #---------------------------------------------------------------
         # conservative operator with cross-term updates in y direction
         #---------------------------------------------------------------
@@ -125,15 +124,15 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phi_AX[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
+            phi_mid[:,i],mass[:,i] = PPM((1/J_p[:,i])*phi_AX[:,i],J_p[:,i]*cy[:,i],ny,dy, idx_y[:,i], J_p[:,i]*r_y[:,i])
             #---------------------------------
             # mass flux at each cell boundary
             #---------------------------------
-            OUT = flux(ny,dy,cy[:,i],phi_mid[:,i],mass[:,i], idx_y[:,i], r_y[:,i])
+            OUT = flux(ny,dy,J_p[:,i]*cy[:,i],phi_mid[:,i],mass[:,i], idx_y[:,i], J_p[:,i]*r_y[:,i])
             #-------------------------------
             # conservative operator updates
             #-------------------------------
-            YC_AX[:,i] = conservative(ny,cy[:,i],OUT)
+            YC_AX[:,i] = conservative(ny,J_p[:,i]*cy[:,i],OUT)
 
 
         #---------------------------------------------------------------
@@ -143,21 +142,21 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[j,:], mass[j,:]= PPM((1/J[j,:])*phi_AY[j,:],cx[j,:],nx,dx, idx_x[j,:], r_x[j,:])
+            phi_mid[j,:], mass[j,:]= PPM((1/J_p[j,:])*phi_AY[j,:],J_p[j,:]*cx[j,:],nx,dx, idx_x[j,:], J_p[j,:]*r_x[j,:])
             #----------------------------------
             # mass flux at each cell boundary
             #----------------------------------
-            OUT = flux(nx,dx,cx[j,:],phi_mid[j,:],mass[j,:], idx_x[j,:],r_x[j,:])
+            OUT = flux(nx,dx,J_p[j,:]*cx[j,:],phi_mid[j,:],mass[j,:], idx_x[j,:],J_p[j,:]*r_x[j,:])
             #----------------------------------------------
             # conservative operator updates
             #----------------------------------------------                
-            XC_AY[j,:] = conservative(nx,cx[j,:],OUT)
+            XC_AY[j,:] = conservative(nx,J_p[j,:]*cx[j,:],OUT)
 
 
         #-------------------------------------------------------
         # Final COSMIC splitting updates
         #------------------------------------------------------- 
-        phi = phiOld+J*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
+        phi = phiOld+J_p*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
 
         phiOld = phi.copy() #update the time step
 
@@ -180,18 +179,18 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
                 phi3 = phiOld.copy()
             if t == int(5*nt/6)-1:
                 phi4 = phiOld.copy()
-        # if initialProfile == orography:
-        #     if t == int(nt/2)-1:
-        #         phi0 = phiOld.copy()
-        # if initialProfile == deform:
-        #     if t == int(nt/5)-1:
-        #         phi0 = phiOld.copy()
-        #     if t == int(2*nt/5)-1:
-        #         phi1 = phiOld.copy()
-        #     if t == int(3*nt/5)-1:
-        #         phi2 = phiOld.copy()
-        #     if t == int(4*nt/5)-1:
-        #         phi3 = phiOld.copy()
+    #     # if initialProfile == orography:
+    #     #     if t == int(nt/2)-1:
+    #     #         phi0 = phiOld.copy()
+    #     # if initialProfile == deform:
+    #     #     if t == int(nt/5)-1:
+    #     #         phi0 = phiOld.copy()
+    #     #     if t == int(2*nt/5)-1:
+    #     #         phi1 = phiOld.copy()
+    #     #     if t == int(3*nt/5)-1:
+    #     #         phi2 = phiOld.copy()
+    #     #     if t == int(4*nt/5)-1:
+    #     #         phi3 = phiOld.copy()
 
     if initialProfile == solid: 
         return [phi0, phi1, phi2, phi3, phi4, phi]
@@ -199,7 +198,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     #     return [phi0, phi]
     # if initialProfile == deform:
     #     return [phi0, phi1, phi2, phi3, phi]
-
+    return phi
 
 def departure_y(X_cntr, X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
     r = np.zeros_like(v)
@@ -221,17 +220,14 @@ def departure_y(X_cntr, X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
         y_depart = phys_to_compt_SB(y_depart, Ly, f_V(X_edge,Lx, Ly))
     else:
         y_depart = y_depart
-
     idx = np.where(v[i]>=0.0, np.ceil((y_depart - ymin)/dy).astype(int)-1 ,np.floor((y_depart - ymin)/dy).astype(int))
-    # idx = np.floor((y_depart - ymin)/dy).astype(int)
 
     Y_edge = np.append(Y_edge, ymax)
     for i in xrange(len(Y)):
-        if v[i] >= 0.:
+        if v[i] > 0:
             r[i] = (Y_edge[idx[i]+1] - y_depart[i])/dy
         else:
             r[i] = -(y_depart[i] - Y_edge[idx[i]])/dy
-
     return idx, r
 
 def departure_x(X, xmin, xmax, u, dx, dt, L):
@@ -245,10 +241,10 @@ def departure_x(X, xmin, xmax, u, dx, dt, L):
             x_depart[i] -= L
 
     idx = np.where(u[i]>=0.0, np.ceil((x_depart - xmin)/dx).astype(int)-1 ,np.floor((x_depart - xmin)/dx).astype(int))
-    
+
     X = np.append(X, xmax)
     for i in xrange(len(X)-1):
-        if u[i] > 0.:
+        if u[i] > 0:
             r[i] = ( X[idx[i]+1] - x_depart[i])/dx
         else:
             r[i] = -(x_depart[i] - X[idx[i]])/dx
@@ -345,8 +341,6 @@ def flux(nx,dx,c,phi_mid,mass, idx, c_r):
                 OUT[i] = phi_mid[i]*c_r[i+1]*dx/dx
             else:             # if the departure cell is at the east of predicted cell
                 OUT[i] = (phi_mid[i]*c_r[i+1]*dx+mass[i]+mass[-1]-mass[idx[i+1]])/dx
-                if i ==99:
-                    print phi_mid[i]*c_r[i+1]*dx, mass[i], mass[-1], mass[idx[i+1]]
         elif c[i+1]<0:  
             k = np.floor(idx[i+1]-1)%nx      # velocity u < 0
             if i> k:           # if the departure cell is at the east of predicted cell  

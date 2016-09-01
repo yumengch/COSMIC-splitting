@@ -107,15 +107,15 @@ def departure_x(X, xmin, xmax, u, dx, dt, L):
         while x_depart[i] >= xmax:
             x_depart[i] -= L
 
-    idx = np.floor((x_depart - xmin)/dx).astype(int)
-    
+    idx = np.where(abs(u[i])<=10e-6, np.ceil((x_depart - xmin)/dx).astype(int) ,np.floor((x_depart - xmin)/dx).astype(int))
+    # idx = np.floor((x_depart - xmin)/dx).astype(int)
     X = np.append(X, xmax)
     for i in xrange(len(X)-1):
         if u[i]>0:
             r[i] = (X[idx[i]+1] - x_depart[i])/dx
         else:
             r[i] = -(x_depart[i] - X[idx[i]])/dx
-        print idx[i], i
+    
     return idx, r
     
 

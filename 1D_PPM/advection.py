@@ -23,7 +23,7 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
 
     # initial conditions
     u = np.zeros_like(x_cntr)
-    u[:] = 2.1
+    u[:] = 2.3124
     c = u*dt/dx
     # print "Courant number:", np.max(u*dt/dx)
     # print np.max(J[1:]*u[1:] - J[:-1]*u[:-1]) 
