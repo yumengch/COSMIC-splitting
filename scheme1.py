@@ -19,7 +19,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     xmax, ymax = xmin + nx*dy, ymin + ny*dy
     Lx, Ly = xmax - xmin, ymax - ymin 
 
-    print nx, ny, xmin, ymin, dx, dy, xmax, ymax, Lx, Ly
+    print nx, ny, nt
     #-----------------------------------------------
     # midpoint values and mass flux at cell boundary
     #-----------------------------------------------
@@ -54,14 +54,6 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     #--------------------------------
     phi = np.zeros_like(phiOld)
 
-    
-    #---------------------------
-    # find the departure points
-    #---------------------------
-    # for j in xrange(ny):
-    #     idx_x[j,:], r_x[j,:] = departure_x(X_edge[j,:], xmin, xmax, u[j,:], dx, dt, Lx)
-    # for i in xrange(nx):
-    #     idx_y[:,i], r_y[:,i] = departure_y(X_edge[:,i], Y_edge[:,i], Y[:,i], ymin, ymax, v[:,i], dy, dt, Lx, Ly, mesh)
     #---------------
     # time updates
     #---------------
@@ -207,81 +199,6 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         return [phi0, phi]
     if initialProfile == deform:
         return [phi0, phi1, phi2, phi3, phi]
-    # return phi
-
-# def departure_y(X_cntr, X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
-#     r = np.zeros_like(v)
-#     k = np.zeros_like(v)
-#     idx = np.zeros_like(v)
-#     y_depart = Y - v*dt
-#     for i in xrange(len(y_depart)):
-#         while y_depart[i] <= ymin:
-#             y_depart[i] += Ly
-#         while y_depart[i] >= ymax or abs(y_depart[i] - ymax) <= 10e-8:
-#             y_depart[i] -= Ly
-#     # for i in xrange(len(y_depart)):
-#     #     while abs(y_depart[i] - ymin) <= 10e-8 and (v[i] > 0.0 or abs(v[i])< 10e-8):
-#     #         y_depart[i] += Ly
-#     #     while  and v[i] < -10e-8:
-#     #         y_depart[i] -= Ly
-#     #-----------------------
-#     # transform back to 
-#     # computational domain
-#     #-----------------------
-#     if mesh == 'quad':
-#         y_depart = phys_to_compt_SB(y_depart, Ly, f_quad(X_edge,Lx, Ly))
-#     elif mesh == 'V':
-#         y_depart = phys_to_compt_SB(y_depart, Ly, f_V(X_edge,Lx, Ly))
-#     elif mesh == 'high':
-#         y_depart = phys_to_compt_oro(X_edge,y_depart,ymax, 6e3)
-#     elif mesh == 'low':
-#         y_depart = phys_to_compt_oro(X_edge,y_depart,ymax, 3e3)
-#     elif mesh == 'W':
-#         y_depart = phys_to_compt_deform(X_edge, y_depart, Lx, ymin, ymax)
-#     else:
-#         y_depart = y_depart
-
-#     k = y_depart - ymin
-#     k = np.where(abs(k)<= 10e-6, 0., k)
-#     for i in xrange(len(v)):
-#         if v[i] >= 0.0:
-#             idx[i] = np.ceil(k[i]/dy).astype(int)-1
-#         else:
-#             idx[i] = np.floor(k[i]/dy).astype(int)
-#     # idx = np.where(v[i]>=0.0, np.ceil((y_depart - ymin)/dy).astype(int)-1 ,np.floor((y_depart - ymin)/dy).astype(int))
-#     # print y_depart[0], idx[0], v[0], k[0], v[0]>=0.0
-#     Y_edge = np.append(Y_edge, ymax)
-#     # print len(Y_edge), len(Y), len(y_depart)
-#     # print np.max(idx)
-#     for i in xrange(len(Y)):
-#         # print idx[i], y_depart[i]
-#         if v[i] >= 0.:
-#             r[i] = (Y_edge[idx[i]+1] - y_depart[i])/dy
-#         else:
-#             r[i] = -(y_depart[i] - Y_edge[idx[i]])/dy
-#         # print i, r[i]
-#     return idx, r
-
-# def departure_x(X, xmin, xmax, u, dx, dt, L):
-#     r = np.zeros_like(u)
-#     x_depart = X - u*dt
-
-#     for i in xrange(len(x_depart)):
-#         while x_depart[i] <= xmin:
-#             x_depart[i] += L
-#         while x_depart[i] >= xmax:
-#             x_depart[i] -= L
-
-#     idx = np.where(u[i]>=0.0, np.ceil((x_depart - xmin)/dx).astype(int)-1 ,np.floor((x_depart - xmin)/dx).astype(int))
-
-#     X = np.append(X, xmax)
-#     for i in xrange(len(X)-1):
-#         if u[i] > 0:
-#             r[i] = ( X[idx[i]+1] - x_depart[i])/dx
-#         else:
-#             r[i] = -(x_depart[i] - X[idx[i]])/dx
-
-#     return idx, r
     
 def departure_y(X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
     r = np.zeros_like(v)
@@ -418,7 +335,6 @@ def PPM(phiOld, c, nx, dx, idx, c_r):
     # PPM update to get phi at j+1/2
     #-----------------------------------------------------------
     for i in xrange(nx):
-        # print idx[i+1]
         if c[i+1]>= 0:
             phi_mid[i] = phi_r[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]-(1-2*c_r[i+1]/3.)*phi_6[idx[i+1]])
         else:

@@ -19,7 +19,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     xmax, ymax = xmin + nx*dx, ymin + ny*dy
     Lx, Ly = xmax - xmin, ymax - ymin 
 
-    print nx, ny, xmin, ymin, dx, dy, xmax, ymax, Lx, Ly
+    print nx, ny, nt
     #-----------------------------------------------
     # midpoint values and mass flux at cell boundary
     #-----------------------------------------------
@@ -344,7 +344,7 @@ def PPM(phiOld, c, nx, dx, idx, c_r):
     # PPM update to get phi at j+1/2
     #-----------------------------------------------------------
     for i in xrange(nx):
-        # print idx[i+1]
+
         if c[i+1]>= 0:
             phi_mid[i] = phi_r[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]-(1-2*c_r[i+1]/3.)*phi_6[idx[i+1]])
         else:
@@ -358,75 +358,6 @@ def PPM(phiOld, c, nx, dx, idx, c_r):
         mass[j] = mass[j-1] +phiOld[j]*dx
 
     return phi_mid, mass
-# def PPM(phiOld, c, nx, dx, idx, c_r):
-# #---------------------------------------------------------------------------------
-# # Author: Yumeng Chen
-# # Scheme:  Piecewise Parabolic Method in 1D
-# # Basis: Colella, P., and P. R. Woodward, 1984: The Piecewise Parabolic Method PPM 
-# #           for gas-dynamical simulations. J. Comput. Phys.,.
-# # Input: phiOld
-# # Output: phi at time nt+1
-# #---------------------------------------------------------------------------------
-
-#     # #-----------------------
-#     # # Basic grid information
-#     # #-----------------------
-#     # dmphi = np.zeros_like(phiOld)           # phi increment as in PPM paper
-#     # phi_r = np.zeros_like(phiOld)           # phi at j+1/2 boundary
-#     # phi_l = np.zeros_like(phiOld)           # phi at j-1/2 
-#     # phi_6 = np.zeros_like(phiOld)           # the difference between phi,j and average of phi_l and phi_r
-#     # daj = np.zeros_like(phiOld)             # the difference between the right and left boundary (for limiters)
-#     phi_mid = np.zeros_like(phiOld)         # final phi at j+1/2
-#     mass = np.zeros(nx)
-#     c = np.append(c, c[0])
-#     idx = np.append(idx,idx[0])
-#     c_r = np.append(c_r, c_r[0])
-#     # #---------------------------------------
-#     # # phi increment as in PPM paper
-#     # #---------------------------------------
-#     # dmphi[1:-1] = 0.5*(phiOld[2:]-phiOld[:-2])
-#     # #-------------------------------------------------------
-#     # # periodic boundary value updates
-#     # #-------------------------------------------------------
-#     # dmphi[0] = 0.5*(phiOld[1]-phiOld[-1])
-#     # dmphi[-1] = 0.5*(phiOld[0]-phiOld[-2]) 
-
-
-
-#     # #------------------------------------------------------------
-#     # # phi at j-1/2 and j+1/2
-#     # #------------------------------------------------------------
-#     # phi_l[1:] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
-#     # phi_l[0] = (0.5*(phiOld[0]+phiOld[-1]) + (dmphi[-1]-dmphi[0])/6.)
-
-#     # phi_r[:-1] = (0.5*(phiOld[1:]+phiOld[:-1]) + (dmphi[:-1]-dmphi[1:])/6.)
-#     # phi_r[-1] = (0.5*(phiOld[0]+phiOld[-1]) + (dmphi[-1]-dmphi[0])/6.)
-
-#     # #------------------------------------------------------------
-#     # # piecewise parabolic subcell reconstruction
-#     # #-----------------------------------------------------------
-#     # daj = phi_r - phi_l
-#     # phi_6 = 6*(phiOld-0.5*(phi_l+phi_r))
-
-#     # #------------------------------------------------------------
-#     # # PPM update to get phi at j+1/2
-#     # #-----------------------------------------------------------
-#     for i in xrange(nx):
-#         # print idx[i+1]
-#         if c[i+1]>= 0:
-#             phi_mid[i] = phiOld[idx[i+1]]
-#         else:
-#             # print c_r[i+1] < 0.0
-#             phi_mid[i] = phiOld[idx[i+1]]
-  
-#     #-------------------
-#     # cumulative mass 
-#     #-------------------    
-#     mass[0] = phiOld[0]*dx
-#     for j in xrange(1,nx):
-#         mass[j] = mass[j-1] +phiOld[j]*dx
-
-#     return phi_mid, mass
 
 def flux(nx,dx,c,phi_mid,mass, idx, c_r):
 #-----------------------------------------------------

@@ -53,18 +53,18 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
     #--------------------------------------
     # save data for ploting and error norm
     #--------------------------------------
-    # if initialProfile == solid:
-    #     it = [int(nt/6.),int(nt/3.),int(nt/2.),int(2*nt/3.),int(5*nt/6), nt]
-    #     for i in xrange(5):
-    #         print 'The max and min of phi at nt = '+str(it[i])+' is ', np.max(np.round(phi[i],5)),np.min(np.round(phi[i],5))
-    #         l1,l2,linf = norms(phiExact[i], phi[i], dx, dy)
-    #         print 'at nt = '+str(it[i])+', the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
-    #     print  'The max and min of phi at final time is ', np.max(np.round(phi[-1],5)),np.min(np.round(phi[-1],5))
-    #     l1,l2,linf = norms(phiOld, phi[-1], dx, dy)
-    #     print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
+    if initialProfile == solid:
+        it = [int(nt/6.),int(nt/3.),int(nt/2.),int(2*nt/3.),int(5*nt/6), nt]
+        for i in xrange(5):
+            print 'The max and min of phi at nt = '+str(it[i])+' is ', np.max(np.round(phi[i],5)),np.min(np.round(phi[i],5))
+            l1,l2,linf = norms(phiExact[i], phi[i], dx, dy)
+            print 'at nt = '+str(it[i])+', the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
+        print  'The max and min of phi at final time is ', np.max(np.round(phi[-1],5)),np.min(np.round(phi[-1],5))
+        l1,l2,linf = norms(phiOld, phi[-1], dx, dy)
+        print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
 
-    #     np.savez('solid_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1],phi[2],phi[3],phi[4],phi[5])
-    #     np.savez('solid_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4],phiExact[5])
+        np.savez('solid_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1],phi[2],phi[3],phi[4],phi[5])
+        np.savez('solid_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4],phiExact[5])
     if initialProfile == orography:
         print 'The max and min of phi at midtime is ', np.max(np.round(phi[0],5)),np.min(np.round(phi[0],5))
         l1,l2,linf = norms(phiExact[0], phi[0], dx, dy)
@@ -74,19 +74,9 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
         print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
         np.savez('orography_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1])
         np.savez('orography__'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1])
-    # if initialProfile == deform:
-    #     print  'The max and min of phi at final time is ', np.max(np.round(phi[1],5)),np.min(np.round(phi[1],5))
-    #     l1,l2,linf = norms(phiExact, phi[-1], dx, dy)
-    #     print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
-    #     np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1],phi[2],phi[3],phi[4])
-    #     np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4])
-    #     contours_Old(X_cntr*180./np.pi - 180.,Y*180./np.pi,phiOld,nt)
-    # 	contours_T4(X_cntr*180/np.pi - 180.,Y*180/np.pi,phi[0],nt)
-    #     contours_T3(X_cntr*180/np.pi - 180.,Y*180/np.pi,phi[1],nt)
-    #     contours_T2(X_cntr*180/np.pi - 180.,Y*180/np.pi,phi[2],nt)
-    #     contours_TT1(X_cntr*180/np.pi - 180.,Y*180/np.pi,phi[3],nt)
-    #     contours_END(X_cntr*180/np.pi - 180.,Y*180/np.pi,phi[4],u,v,x,nt)
-
-
-# advection(initialProfile = solid, mesh ='v', xmin = 0., xmax = 10000.,  ymin = 0., ymax = 10000., nx = 100, ny = 100, dt = 10., nt = 60)
-# advection(initialProfile = deform, mesh = 'orthogo', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 10, ny = 5, dt = 0.2, nt = 25)
+    if initialProfile == deform:
+        print  'The max and min of phi at final time is ', np.max(np.round(phi[1],5)),np.min(np.round(phi[1],5))
+        l1,l2,linf = norms(phiExact, phi[-1], dx, dy)
+        print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
+        np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1],phi[2],phi[3],phi[4])
+        np.savez('deform_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1],phiExact[2],phiExact[3],phiExact[4])
