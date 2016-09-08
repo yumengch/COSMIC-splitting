@@ -23,9 +23,9 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
 
     # initial conditions
     u = np.zeros_like(x_cntr)
-    u[:] = 2.3124
+    u[:] = -6.0023243
     c = u*dt/dx
-    # print "Courant number:", np.max(u*dt/dx)
+    print "Courant number:", np.max(u*dt/dx)
     # print np.max(J[1:]*u[1:] - J[:-1]*u[:-1]) 
     phiOld= initialProfile(x_cntr)
 
@@ -47,8 +47,8 @@ def advection(initialProfile=topHat, xmin = 0, xmax = 1, nx = 100, nt = 125, dt 
     plt.plot(x_cntr,phi)
     plt.plot(x_cntr,phiExact, 'r')
 
-    plt.ylim(-0.1, 1.1)
+    # plt.ylim(-0.1, 1.1)
     plt.show()
 
 
-advection(initialProfile=cosBell, xmin = 0., xmax = 1., nx = 100, nt = 100,  dt = 0.05)
+advection(initialProfile=cosBell, xmin = 0., xmax = 1., nx = 50, nt = 100,  dt = 0.1)
