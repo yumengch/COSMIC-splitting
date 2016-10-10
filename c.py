@@ -41,8 +41,8 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
     idx_y = np.zeros_like(phiOld).astype(int)
     r_x = np.zeros_like(phiOld)
     r_y = np.zeros_like(phiOld)
-    ax = np.zeros_like(phiOld)
-    ay = np.zeros_like(phiOld)
+    # ax = np.zeros_like(phiOld)
+    # ay = np.zeros_like(phiOld)
     #-------------------------------------------------------
     # phi_AX, phi_AY:inner operator (advective-form) update
     # XC_AY, YC_AX: cross term operator updates
@@ -70,19 +70,15 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             x_cntr, y_cntr = x_edge[:-1] + 0.5*dx, y_edge[:-1] + 0.5*dy
             u, v, cx, cy = initialProfile(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change)
 
-
         #---------------------------
         # find the departure points
         #---------------------------
         for j in xrange(ny):
             idx_x[j,:], r_x[j,:], cx[j,:] = departure_x(X_edge[j,:], xmin, xmax, u[j,:], dx, dt, Lx)
+
         for i in xrange(nx):
             idx_y[:,i], r_y[:,i], cy[:,i] = departure_y(X_edge[:,i], Y_edge[:,i], Y[:,i], ymin, ymax, v[:,i], dy, dt, Lx, Ly, mesh)
-        # if t == 1:
-        dudx= (cx[:-1,1:]-cx[:-1,:-1])/dt
-        dvdy = (1/J[:-1,:-1])*(cy[1:,:-1]-cy[:-1,:-1])/dt
-        # for i in xrange(nx):
-        #     print 'divergence :', np.max(dudx[:,i]+dvdy[:,i])
+
         #-------------------------------------------------------------
         # advective operator and non-cross term conservative operator 
         # updates in y direction
@@ -172,7 +168,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         # Final COSMIC splitting updates
         #------------------------------------------------------- 
         phi = phiOld + J*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
-        phi = np.where(np.absolute(phi) < sys.float_info.epsilon, 0.0, phi)
+
         phiOld = phi.copy() #update the time step
 
         #----------------------------------------
@@ -183,36 +179,36 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         #-----------------------------
         # intermediate value storage
         #-----------------------------
-    #     if initialProfile == solid: 
-    #         if t == int(nt/6)-1:
-    #             phi0 = phiOld.copy()
-    #         if t == int(nt/3)-1:
-    #             phi1 = phiOld.copy()
-    #         if t == int(nt/2)-1:
-    #             phi2 = phiOld.copy()
-    #         if t == int(2*nt/3)-1:
-    #             phi3 = phiOld.copy()
-    #         if t == int(5*nt/6)-1:
-    #             phi4 = phiOld.copy()
-    #     if initialProfile == orography:
-    #         if t == int(nt/2)-1:
-    #             phi0 = phiOld.copy()
-    #     if initialProfile == deform:
-    #         if t == int(nt/5)-1:
-    #             phi0 = phiOld.copy()
-    #         if t == int(2*nt/5)-1:
-    #             phi1 = phiOld.copy()
-    #         if t == int(3*nt/5)-1:
-    #             phi2 = phiOld.copy()
-    #         if t == int(4*nt/5)-1:
-    #             phi3 = phiOld.copy()
+        if initialProfile == solid: 
+            if t == int(nt/6)-1:
+                phi0 = phiOld.copy()
+            if t == int(nt/3)-1:
+                phi1 = phiOld.copy()
+            if t == int(nt/2)-1:
+                phi2 = phiOld.copy()
+            if t == int(2*nt/3)-1:
+                phi3 = phiOld.copy()
+            if t == int(5*nt/6)-1:
+                phi4 = phiOld.copy()
+        if initialProfile == orography:
+            if t == int(nt/2)-1:
+                phi0 = phiOld.copy()
+        if initialProfile == deform:
+            if t == int(nt/5)-1:
+                phi0 = phiOld.copy()
+            if t == int(2*nt/5)-1:
+                phi1 = phiOld.copy()
+            if t == int(3*nt/5)-1:
+                phi2 = phiOld.copy()
+            if t == int(4*nt/5)-1:
+                phi3 = phiOld.copy()
 
-    # if initialProfile == solid: 
-    #     return [phi0, phi1, phi2, phi3, phi4, phi]
-    # if initialProfile == orography:
-    #     return [phi0, phi]
-    # if initialProfile == deform:
-    #     return [phi0, phi1, phi2, phi3, phi]
+    if initialProfile == solid: 
+        return [phi0, phi1, phi2, phi3, phi4, phi]
+    if initialProfile == orography:
+        return [phi0, phi]
+    if initialProfile == deform:
+        return [phi0, phi1, phi2, phi3, phi]
     # return phi
 
 
@@ -228,9 +224,7 @@ def departure_y(X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
     for i in xrange(len(y_depart)):
         while y_depart[i] < ymin:
             y_depart[i] += Ly
-        while y_depart[i] > ymax or abs(y_depart[i] - ymax) <= 10e-10:
-            if i == 0:
-                print y_depart[0]
+        while y_depart[i] > ymax or abs(y_depart[i] - ymax) <= 10e-8:
             y_depart[i] -= Ly
 
     #-----------------------
@@ -251,14 +245,9 @@ def departure_y(X_edge, Y_edge, Y, ymin, ymax, v, dy, dt, Lx, Ly, mesh):
         y_depart = y_depart
 
     c = (Y_edge - y_depart)/dy
-    # for j in xrange(len(v)):
-    #     print c[j]
-    # print c[0], Y_edge[0], y_depart[0], abs(y_depart[0] - ymax)<= sys.float_info.epsilon
-    #     print j, Y_edge[j], y_depart[j], c[j]
-    c = np.where(np.absolute(c) < 10e-10, 0.0, c)
-
-    c = np.where( (v> 0) &  ((c <0.0) | (y_length < ymin)), (ymax - y_depart + Y_edge - ymin)/dy, c )
-    c = np.where( (v< 0) &  ((c > 0.0) | (y_length > ymax)), -(ymax + y_depart - Y_edge - ymin)/dy, c )
+    c = np.where(np.absolute(c) < sys.float_info.epsilon, 0.0, c)
+    c = np.where( (v> 0) &  ((c <0) | (y_length < ymin)), (ymax - y_depart + Y_edge - ymin)/dy, c )
+    c = np.where( (v< 0) &  ((c > 0) | (y_length > ymax)), -(ymax + y_depart - Y_edge - ymin)/dy, c )
 
     N = c.astype(int)
     r = c - N
@@ -289,7 +278,7 @@ def departure_x(X, xmin, xmax, u, dx, dt, L):
 
 
     c = (X - x_depart)/dx
-    c = np.where(np.absolute(c) < 10e-10, 0.0, c)
+    c = np.where(np.absolute(c) < sys.float_info.epsilon, 0.0, c)
     c = np.where( (u > 0) & ((c <0) | (x_length < xmin)), (xmax - x_depart + X - xmin)/dx, c )
     c = np.where( (u < 0) & ((c >0) | (x_length > xmax)), -(xmax + x_depart - X - xmin)/dx, c )
 
@@ -362,10 +351,8 @@ def PPM(phiOld, c, nx, dx, idx, c_r):
     for i in xrange(nx):
 
         if c[i+1]>= 0:
-            # print phi_r[idx[i+1]], c_r[i+1], daj[idx[i+1]], phi_6[idx[i+1]]
             phi_mid[i] = phi_r[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]-(1-2*c_r[i+1]/3.)*phi_6[idx[i+1]])
         else:
-            # print phi_l[idx[i+1]], c_r[i+1], daj[idx[i+1]], phi_6[idx[i+1]]
             phi_mid[i] = phi_l[idx[i+1]]-0.5*c_r[i+1]*(daj[idx[i+1]]+(1+2*c_r[i+1]/3.)*phi_6[idx[i+1]])
   
     #-------------------
@@ -394,9 +381,7 @@ def flux(nx,dx,c,phi_mid,mass, idx, c_r):
             if i>idx[i+1]:           # if the departure cell is at the west of predicted cell 
                 OUT[i] = (phi_mid[i]*c_r[i+1]*dx+(mass[i]-mass[idx[i+1]]))/dx
             elif i==idx[i+1]:        # if the departure cell is at the position of predicted cell
-                # print phi_mid[i], c_r[i+1], dx
                 OUT[i] = phi_mid[i]*c_r[i+1]*dx/dx
-                
             else:             # if the departure cell is at the east of predicted cell
                 OUT[i] = (phi_mid[i]*c_r[i+1]*dx+mass[i]+mass[-1]-mass[idx[i+1]])/dx
         elif c[i+1]<0:  
@@ -452,5 +437,4 @@ def conservative(nx,c,OUT):
         elif c[i+1]<=0 and c[i]>=0:
             XC[i] = (OUT[i]+OUT[i-1])
     return XC[:]
-
 

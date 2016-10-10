@@ -10,7 +10,7 @@ exec(open("initialCondition.py").read())
 exec(open("scheme.py").read())
 exec(open("diagnostics.py").read())
 exec(open("meshes.py").read())
-exec(open("plot.py").read())
+# exec(open("plot.py").read())
 def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
     np.seterr(all='raise')
 

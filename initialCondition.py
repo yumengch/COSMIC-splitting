@@ -116,7 +116,14 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     # plt.show()
     cx = U*dt/dx
     cy = V*dt/dy
-
+    dudx = (1/J)*u - U
+    dudx = ((1/J[:-1,1:])*u[:-1,1:]-(1/J[:-1,:-1])*u[:-1,:-1])/dx
+    dvdy = (v[1:,:-1]-v[:-1,:-1])/dY
+    # dudx= J[:-1,:-1]*(cx[:-1,1:]-cx[:-1,:-1])/dt
+    # dvdy = J[:-1,:-1]*(cy[1:,:-1]-cy[:-1,:-1])/dt
+    for j in xrange(ny):
+        print 'divergence :', np.max(dudx[j,:])
+    # print "d", np.max(dvdy)
     return phi, phiExact, cx, cy, u, v, X_cntr, X_edge[:-1,:-1], Y_edge[:-1,:-1], Y[:-1,:-1], J, Y_C, J_p
 
 def orography(x_edge, z_edge, x_cntr, z_cntr, t, nt, dt, mesh, change):
