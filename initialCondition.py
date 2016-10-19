@@ -83,10 +83,11 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     dY_J = np.zeros([ny,nx])
     J =  np.zeros([ny, nx])
     J_p =  np.zeros([ny, nx])
-    dY = Y[1:, :-1] - Y[:-1, :-1]
+    dY = Y[1:, :] - Y[:-1, :]
     dX = X_edge[:-1, 1:] - X_edge[:-1, :-1]
     dY_J[1:, :] = Y_C[1:, :] - Y_C[:-1, :]
     dY_J[0, :]  = Y_C[0, :] + dY_J[-1, :]
+    dY_1 = (dY[:, 1:] + dY[:, :-1])*0.5
     J = dy/dY
     J_p = dy/dY_J
 
@@ -101,7 +102,7 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     #-----------------------------
     # velocity in physical domain
     #-----------------------------
-    u = -(psi[1:,:-1]-psi[:-1,:-1])/dY
+    u = -(psi[1:,:-1]-psi[:-1,:-1])/dY[:, :-1]
     v =  (psi[:-1,1:]-psi[:-1,:-1])/dX
   
 
@@ -116,14 +117,14 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     # plt.show()
     cx = U*dt/dx
     cy = V*dt/dy
-    dudx = (1/J)*u - U
-    dudx = ((1/J[:-1,1:])*u[:-1,1:]-(1/J[:-1,:-1])*u[:-1,:-1])/dx
-    dvdy = (v[1:,:-1]-v[:-1,:-1])/dY
-    # dudx= J[:-1,:-1]*(cx[:-1,1:]-cx[:-1,:-1])/dt
+    # dudx = (1/J)*u - U
+    dudx = (u[:-1,1:]-u[:-1,:-1])/dX[:-1,:-1]
+    dvdy = (v[1:,:-1]-v[:-1,:-1])/dY_1[:-1, :-1]
+    # dudx= (cx[:-1,1:]-cx[:-1,:-1])/dt
     # dvdy = J[:-1,:-1]*(cy[1:,:-1]-cy[:-1,:-1])/dt
-    for j in xrange(ny):
-        print 'divergence :', np.max(dudx[j,:])
-    # print "d", np.max(dvdy)
+    # for j in xrange(ny):
+    #     print 'divergence :', np.max(dudx[j,:] )
+    print "d", np.max(dvdy + dudx)
     return phi, phiExact, cx, cy, u, v, X_cntr, X_edge[:-1,:-1], Y_edge[:-1,:-1], Y[:-1,:-1], J, Y_C, J_p
 
 def orography(x_edge, z_edge, x_cntr, z_cntr, t, nt, dt, mesh, change):

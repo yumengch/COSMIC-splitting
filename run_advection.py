@@ -30,10 +30,10 @@ exec(open("advection.py").read())
 # Solid body rotation on V shape grids
 #---------------------------------------------------------------------------------
 # # small c
-advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 50, ny = 50, dt= 2., nt =1)
-# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 100, ny = 100, dt= 1., nt =600)
-# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 200, ny = 200, dt= 0.5, nt =1200)
-# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 400, ny = 400, dt= 0.25, nt =2400)
+# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 50, ny = 50, dt= 2., nt =1)
+# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 100, ny = 100, dt= 1., nt =1)
+# advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 200, ny = 200, dt= 0.5, nt =1)
+advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 400, ny = 400, dt= 0.25, nt =1)
 
 # # large c
 # advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0., ymax = 10000., nx = 50, ny = 50, dt= 20., nt =300)
@@ -127,27 +127,27 @@ advection(initialProfile = solid, mesh = 'V', xmin = 0., xmax = 10000., ymin = 0
 # #---------------------------------------------------------------------------------
 # # deformational flow on orthogonal mesh
 # #---------------------------------------------------------------------------------
-# # small c
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 60, ny = 30, dt = 0.02, nt = 250)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.01, nt = 500)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 240, ny = 120, dt = 0.005, nt = 1000)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 360, ny = 180, dt = 0.01/3, nt = 1500)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 480, ny = 240, dt = 0.0025, nt = 2000)
+# # # small c
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 60, ny = 30, dt = 0.02, nt = 250)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.01, nt = 500)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 240, ny = 120, dt = 0.005, nt = 1000)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 360, ny = 180, dt = 0.01/3, nt = 1500)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 480, ny = 240, dt = 0.0025, nt = 2000)
 
-# large c
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 60, ny = 30, dt = 0.2, nt = 25)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.1, nt = 50)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 240, ny = 120, dt = 0.05, nt = 100)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 360, ny = 180, dt = 0.1/3, nt = 150)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 480, ny = 240, dt = 0.025, nt = 200)
+# # large c
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 60, ny = 30, dt = 0.2, nt = 25)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.1, nt = 50)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 240, ny = 120, dt = 0.05, nt = 100)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 360, ny = 180, dt = 0.1/3, nt = 150)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 480, ny = 240, dt = 0.025, nt = 200)
 
-# same spatial resolution with varying dt
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.1, nt = 50)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.05, nt = 100)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.02, nt = 250)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.01, nt = 500)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.005, nt = 1000)
-advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.0025, nt = 2000)
+# # same spatial resolution with varying dt
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.1, nt = 50)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.05, nt = 100)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.02, nt = 250)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.01, nt = 500)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.005, nt = 1000)
+# advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.0025, nt = 2000)
 
 # ---------------------------------------------------------------------------------
 # deformational flow on W shape mesh

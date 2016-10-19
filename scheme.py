@@ -78,11 +78,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             idx_x[j,:], r_x[j,:], cx[j,:] = departure_x(X_edge[j,:], xmin, xmax, u[j,:], dx, dt, Lx)
         for i in xrange(nx):
             idx_y[:,i], r_y[:,i], cy[:,i] = departure_y(X_edge[:,i], Y_edge[:,i], Y[:,i], ymin, ymax, v[:,i], dy, dt, Lx, Ly, mesh)
-        # if t == 1:
-        dudx= (cx[:-1,1:]-cx[:-1,:-1])/dt
-        dvdy = (1/J[:-1,:-1])*(cy[1:,:-1]-cy[:-1,:-1])/dt
-        # for i in xrange(nx):
-        #     print 'divergence :', np.max(dudx[:,i]+dvdy[:,i])
+
         #-------------------------------------------------------------
         # advective operator and non-cross term conservative operator 
         # updates in y direction

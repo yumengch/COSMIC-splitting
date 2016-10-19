@@ -9,7 +9,7 @@ def cosBell(x):
     if pl.ndim(x) != 1:
         raise ValueError("In cosBell(x), x must be a one dimensional array")
 
-    bell= lambda x: 0.5*(1 - pl.cos(4*pl.pi*x))
+    bell= lambda x: 1000*0.5*(1 - pl.cos(4*pl.pi*x))
 
     #chooses bell(x) where condition is true, else chooses zeros
     phi = pl.where((x<0.5) | (x>=1.0), bell(x), 0)
