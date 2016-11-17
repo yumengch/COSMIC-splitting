@@ -87,7 +87,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phiOld[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
+            phi_mid[:,i],mass[:,i] = PPM((1/J_p[:,i])*phiOld[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
             phi_mid[:,i] = np.where(np.absolute(phi_mid[:,i]) < sys.float_info.epsilon, 0.0, phi_mid[:,i])
             #--------------------------------------
             # mass flux at each cell boundary
@@ -125,7 +125,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         # advective operator updates
         #---------------------------------------------------------    
         phi_AX = phiOld + J*XA
-        phi_AY = phiOld + J*YA
+        phi_AY = phiOld + J_p*YA
         #---------------------------------------------------------------
         # conservative operator with cross-term updates in y direction
         #---------------------------------------------------------------
@@ -133,7 +133,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
             #------------------
             # 1D PPM updates
             #------------------
-            phi_mid[:,i],mass[:,i] = PPM((1/J[:,i])*phi_AX[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
+            phi_mid[:,i],mass[:,i] = PPM((1/J_p[:,i])*phi_AX[:,i],cy[:,i],ny,dy, idx_y[:,i], r_y[:,i])
             phi_mid[:,i] = np.where(np.absolute(phi_mid[:,i]) < sys.float_info.epsilon, 0.0, phi_mid[:,i])
             #---------------------------------
             # mass flux at each cell boundary
@@ -167,7 +167,7 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         #-------------------------------------------------------
         # Final COSMIC splitting updates
         #------------------------------------------------------- 
-        phi = phiOld + J*(0.5*(XC+XC_AY)+0.5*(YC+YC_AX))
+        phi = phiOld + J*0.5*(XC+XC_AY)+J_p*0.5*(YC+YC_AX)
         phi = np.where(np.absolute(phi) < sys.float_info.epsilon, 0.0, phi)
         phiOld = phi.copy() #update the time step
 
@@ -179,36 +179,36 @@ def COSMIC(phiOld, cx, cy, u, v, X_cntr, X_edge, Y_edge, Y, dt, nt, J, J_p, init
         #-----------------------------
         # intermediate value storage
         #-----------------------------
-    #     if initialProfile == solid: 
-    #         if t == int(nt/6)-1:
-    #             phi0 = phiOld.copy()
-    #         if t == int(nt/3)-1:
-    #             phi1 = phiOld.copy()
-    #         if t == int(nt/2)-1:
-    #             phi2 = phiOld.copy()
-    #         if t == int(2*nt/3)-1:
-    #             phi3 = phiOld.copy()
-    #         if t == int(5*nt/6)-1:
-    #             phi4 = phiOld.copy()
-    #     if initialProfile == orography:
-    #         if t == int(nt/2)-1:
-    #             phi0 = phiOld.copy()
-    #     if initialProfile == deform:
-    #         if t == int(nt/5)-1:
-    #             phi0 = phiOld.copy()
-    #         if t == int(2*nt/5)-1:
-    #             phi1 = phiOld.copy()
-    #         if t == int(3*nt/5)-1:
-    #             phi2 = phiOld.copy()
-    #         if t == int(4*nt/5)-1:
-    #             phi3 = phiOld.copy()
+        if initialProfile == solid: 
+            if t == int(nt/6)-1:
+                phi0 = phiOld.copy()
+            if t == int(nt/3)-1:
+                phi1 = phiOld.copy()
+            if t == int(nt/2)-1:
+                phi2 = phiOld.copy()
+            if t == int(2*nt/3)-1:
+                phi3 = phiOld.copy()
+            if t == int(5*nt/6)-1:
+                phi4 = phiOld.copy()
+        if initialProfile == orography:
+            if t == int(nt/2)-1:
+                phi0 = phiOld.copy()
+        if initialProfile == deform:
+            if t == int(nt/5)-1:
+                phi0 = phiOld.copy()
+            if t == int(2*nt/5)-1:
+                phi1 = phiOld.copy()
+            if t == int(3*nt/5)-1:
+                phi2 = phiOld.copy()
+            if t == int(4*nt/5)-1:
+                phi3 = phiOld.copy()
 
-    # if initialProfile == solid: 
-    #     return [phi0, phi1, phi2, phi3, phi4, phi]
-    # if initialProfile == orography:
-    #     return [phi0, phi]
-    # if initialProfile == deform:
-    #     return [phi0, phi1, phi2, phi3, phi]
+    if initialProfile == solid: 
+        return [phi0, phi1, phi2, phi3, phi4, phi]
+    if initialProfile == orography:
+        return [phi0, phi]
+    if initialProfile == deform:
+        return [phi0, phi1, phi2, phi3, phi]
     # return phi
 
 

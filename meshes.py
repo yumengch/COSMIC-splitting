@@ -34,12 +34,15 @@ def h(x, h0):
                     h0*np.cos(np.pi*x/lam)**2 * np.cos(np.pi*x*0.5/a)**2,
                     0)
 
-def compt_to_phys_SB(Y, Ly, fx):
+def compt_to_phys_SB(Y, ymax, ymin, fx):
     #-------------------------------------
     # non-orthogonal computational domain 
     # for solid body rotation test case
     #-------------------------------------
-    return np.where(Y>0.5*Ly, fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
+    Ly = ymax + ymin
+    # return np.where((Y>=0.5*Ly) & (Y <= ymax), ymax + (Y-ymax)*(fx-ymax)/(0.5*Ly - ymax), \
+    #     np.where((Y<0.5*Ly) & (Y >= ymin),  ymin + (Y-ymin)*(fx-ymin)/(0.5*Ly-ymin), Y))#
+    return np.where(Y>0.5*(ymax + ymin), fx+(Y-0.5*Ly)*(Ly-fx)/(0.5*Ly),Y*fx/(0.5*Ly))
 
 def phys_to_compt_SB(Y, Ly, fx):
     #-------------------------------------
