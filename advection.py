@@ -7,7 +7,7 @@ import matplotlib
 #---------------------------------------------------------------------------------
 
 exec(open("initialCondition.py").read())
-exec(open("scheme1.py").read())
+exec(open("scheme.py").read())
 exec(open("diagnostics.py").read())
 exec(open("meshes.py").read())
 # exec(open("plot.py").read())
@@ -29,16 +29,16 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
     t = -1
     phiOld, phiExact, cx, cy, J, J_s, J_w = initialProfile(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change)
     
-    #------------------------------
+    # ------------------------------
     # COSMIC splitting updates
-    #------------------------------
+    # ------------------------------
     if initialProfile == deform:
         change = True
     else:
         change = False
     phi = COSMIC(phiOld, cx, cy, dx, dy, xmin, ymin, dt, nt, J, J_s, J_w, initialProfile, mesh, change)
-    
-    #--------------------------------------
+
+    # #--------------------------------------
     # save data for ploting and error norm
     #--------------------------------------
     if initialProfile == solid:
@@ -61,7 +61,7 @@ def advection(initialProfile, mesh, xmin, xmax,  ymin, ymax, nx, ny, dt, nt):
         l1,l2,linf = norms(phiExact[-1], phi[1], dx, dy)
         print 'at final time the l2 norm is ', np.round(l2,5),' the linf norm is ', np.round(linf,5)
         np.savez('orography_'+mesh+'_nx'+str(nx)+'nt'+str(nt), phiOld, phi[0], phi[1])
-        np.savez('orography__'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1])
+        np.savez('orography_'+mesh+'_nx'+str(nx)+'nt'+str(nt)+'_Exact',  phiExact[0], phiExact[1])
 
     if initialProfile == deform:
         print  'The max and min of phi at final time is ', np.max(np.round(phi[1],5)),np.min(np.round(phi[1],5))

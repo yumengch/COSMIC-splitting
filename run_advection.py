@@ -75,21 +75,13 @@ advection(initialProfile = solid, mesh = 'quad', xmin = 0., xmax = 10000., ymin 
 # ---------------------------------------------------------------------------------
 # Horizontal advection over orography h0 = 3km
 # ---------------------------------------------------------------------------------
-small c
+# small c
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =150, ny = 25, dt= 50, nt = 200)
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 25, nt = 400)
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =600, ny = 100, dt= 12.5, nt =800)
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1200, ny = 200, dt= 6.25, nt =1600)
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1500, ny = 250, dt= 5, nt =2000)
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =2400, ny = 400, dt= 3.125, nt =3200)
-
-# small c
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =150, ny = 25, dt= 50, nt = 20)
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 25, nt = 40)
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =600, ny = 100, dt= 12.5, nt = 80)
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1200, ny = 200, dt= 6.25, nt = 160)
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1500, ny = 250, dt= 5, nt = 200)
-advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =2400, ny = 400, dt= 3.125, nt = 320)
 
 # same spatial resolution with varying dt
 advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 50, nt = 200)
@@ -101,21 +93,13 @@ advection(initialProfile = orography, mesh = 'low', xmin = -150e3, xmax = 150e3,
 #---------------------------------------------------------------------------------
 # Horizontal advection over orography h0 = 6km
 #---------------------------------------------------------------------------------
-small c
+# small c
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =150, ny = 25, dt= 50, nt = 200)
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 25, nt = 400)
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =600, ny = 100, dt= 12.5, nt = 800)
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1200, ny = 200, dt= 6.25, nt = 1600)
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1500, ny = 250, dt= 5, nt = 2000)
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =2400, ny = 400, dt= 3.125, nt = 3200)
-
-# large c
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =150, ny = 25, dt= 50, nt = 20)
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 25, nt = 40)
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =600, ny = 100, dt= 12.5, nt = 80)
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1200, ny = 200, dt= 6.25, nt = 160)
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =1500, ny = 250, dt= 5, nt = 200)
-advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =2400, ny = 400, dt= 3.125, nt = 320)
 
 # same spatial resolution with varying dt
 advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3, ymin = 0., ymax = 25e3, nx =300, ny = 50, dt= 50, nt = 200)
@@ -127,7 +111,7 @@ advection(initialProfile = orography, mesh = 'high', xmin = -150e3, xmax = 150e3
 #---------------------------------------------------------------------------------
 # deformational flow on orthogonal mesh
 #---------------------------------------------------------------------------------
-# # small c
+# small c
 advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 60, ny = 30, dt = 0.02, nt = 250)
 advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 120, ny = 60, dt = 0.01, nt = 500)
 advection(initialProfile = deform, mesh = 'orthog', xmin = 0., xmax = 2.*np.pi, ymin = -0.5*np.pi, ymax = 0.5*np.pi, nx = 240, ny = 120, dt = 0.005, nt = 1000)

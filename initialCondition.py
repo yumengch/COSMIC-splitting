@@ -51,7 +51,7 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
 
     # tracer distribution:
     phi = np.exp(- 0.5*(((X_cntr-x0)/500)**2 + ((Y_C-y0)/500)**2))
-    phi[:,:] = 1.0
+
     #---------------------
     # Analytical solution 
     #---------------------
@@ -108,9 +108,10 @@ def solid(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
 
     cx = U*dt/dx
     cy = V*dt/dy
-    dudx = (U[:-1,1:]-U[:-1,:-1])/dx
-    dvdy = (V[1:,:-1]-V[:-1,:-1])/dy
-
+    dcx = np.round(np.max(cx[:-1,1:]/J_w[:-1,1:] - cx[:-1,:-1]/J_w[:-1,:-1]), 5)
+    dcy = np.round(np.max(cy[1:,:-1]/J_s[1:,:-1] - cy[:-1,:-1]/J_s[:-1,:-1]), 5)
+    print "the deformational Courant number in x:", dcx, "in y: ", dcy
+    print "the max Courant number in x:", np.round(np.max(cx/J_w), 5), "in y: ", np.round(np.max(cy/J_s), 5)
     return phi, phiExact, cx, cy, J, J_s, J_w
 
 def orography(x_edge, z_edge, x_cntr, z_cntr, t, nt, dt, mesh, change):
@@ -211,9 +212,10 @@ def orography(x_edge, z_edge, x_cntr, z_cntr, t, nt, dt, mesh, change):
 
     cx = U*dt/dx
     cy = V*dt/dz
-    dudx = (U[:-1,1:]-U[:-1,:-1])/dx
-    dvdy = (V[1:,:-1]-V[:-1,:-1])/dz
-
+    dcx = np.round(np.max(cx[:-1,1:]/J_w[:-1,1:] - cx[:-1,:-1]/J_w[:-1,:-1]), 5)
+    dcy = np.round(np.max(cy[1:,:-1]/J_s[1:,:-1] - cy[:-1,:-1]/J_s[:-1,:-1]), 5)
+    print "the deformational Courant number in x:", dcx, "in y: ", dcy
+    print "the max Courant number in x:", np.round(np.max(cx/J_w), 5), "in y: ", np.round(np.max(cy/J_s), 5)
     return phi, phiExact, cx, cy, J, J_s, J_w
 
 def deform(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
@@ -251,8 +253,10 @@ def deform(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
         Y_C = compt_to_phys_deform(X_cntr, Y_cntr, Lx, ymin, ymax)
     else:
         Y_C = Y_cntr
+    # phi = np.zeros([ny, nx])
     phi = 0.95*np.exp(- 5*((X_cntr - x0)**2 + (Y_C - y0)**2)) + 0.95*np.exp(- 5*((X_cntr - x1)**2+ (Y_C - y0)**2))
     phiExact = phi
+
     #-----------------------------
     # Jacobian for v
     #-----------------------------
@@ -262,31 +266,15 @@ def deform(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
     J_s = dy/dY_s
 
     if mesh == 'W':
-        Y = compt_to_phys_deform(X_edge, Y_edge, Lx, ymin, ymax)
+        Y_E = compt_to_phys_deform(X_edge, Y_edge, Lx, ymin, ymax)
     else:
-        Y = Y_edge
+        Y_E = Y_edge
     #-----------------------------
     # Jacobian for u
     #-----------------------------
-    dY_w = Y[1:, :-1] - Y[:-1, :-1]
+    dY_w = Y_E[1:, :-1] - Y_E[:-1, :-1]
     J_w = dy/dY_w
-    #---------------------------------
-    # time varying velocity in 
-    #---------------------------------
-    if change:
-        psi = (u0/T)*((Lx/2./np.pi)**2)*((np.sin(2*np.pi*((X_edge/Lx) - (float(t)/nt))))**2)*((np.cos(Y))**2)*np.cos(np.pi*t/nt)-Lx*Y/T
-        #-----------------------------
-        # Courant number in computational domain
-        #-----------------------------
-        U = -J_w*(psi[1:,:-1]-psi[:-1,:-1])/dy
-        V =  J_s*(psi[:-1,1:]-psi[:-1,:-1])/dx
 
-        cx = U*dt/dx
-        cy = V*dt/dy
-
-        return cx, cy
-
-    psi = (u0/T)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X_edge/Lx) - (float(0)/nt))))**2)*((np.cos(np.pi*Y/Lx))**2) 
     #------------------
     # Jacobian for phi
     #-----------------
@@ -296,6 +284,24 @@ def deform(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
         Y = Y_edge[:,:-1]
     dY = Y[1:, :] - Y[:-1, :]
     J = dy/dY
+    #---------------------------------
+    # time varying velocity in 
+    #---------------------------------
+    if change:
+        psi = (u0/T)*((Lx/2./np.pi)**2)*((np.sin(2*np.pi*((X_edge/Lx) - (float(t)/nt))))**2)*((np.cos(Y_E))**2)*np.cos(np.pi*t/nt)-Lx*Y_E/T
+        #-----------------------------
+        # Courant number in computational domain
+        #-----------------------------
+        U = -J_w*(psi[1:,:-1]-psi[:-1,:-1])/dy
+        V =  J_s*(psi[:-1,1:]-psi[:-1,:-1])/dx
+
+        cx = U*dt/dx
+        cy = V*dt/dy
+        dcx = np.round(np.max(cx[:-1,1:]/J_w[:-1,1:] - cx[:-1,:-1]/J_w[:-1,:-1]), 5)
+        dcy = np.round(np.max(cy[1:,:-1]/J_s[1:,:-1] - cy[:-1,:-1]/J_s[:-1,:-1]), 5)
+        return cx, cy
+
+    psi = (u0/T)*((Lx/2/np.pi)**2)*((np.sin(2*np.pi*((X_edge/Lx) - (float(1)/nt))))**2)*((np.cos(np.pi*Y_E/Ly))**2) -Lx*Y_E/T
 
     #-----------------------------
     # Courant number in computational domain
@@ -305,5 +311,8 @@ def deform(x_edge, y_edge, x_cntr, y_cntr, t, nt, dt, mesh, change):
 
     cx = U*dt/dx
     cy = V*dt/dy
-
+    dcx = np.round(np.max(cx[:-1,1:]/J_w[:-1,1:] - cx[:-1,:-1]/J_w[:-1,:-1]), 5)
+    dcy = np.round(np.max(cy[1:,:-1]/J_s[1:,:-1] - cy[:-1,:-1]/J_s[:-1,:-1]), 5)
+    print "the max deformational Courant number in x:", dcx, "in y: ", dcy
+    print "the max Courant number in x:", np.round(np.max(cx/J_w), 5), "in y: ", np.round(np.max(cy/J_s), 5)
     return phi, phiExact, cx, cy, J, J_s, J_w
